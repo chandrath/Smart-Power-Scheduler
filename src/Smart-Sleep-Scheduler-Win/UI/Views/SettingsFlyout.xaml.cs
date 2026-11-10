@@ -384,14 +384,15 @@ public partial class SettingsFlyout : UserControl
         {
             0 => "0 sessions recorded",
             1 => "1 session recorded",
-            _ => $"{records.Count} sessions recorded"
+            <= 20 => $"{records.Count} sessions recorded",
+            _ => $"{records.Count} sessions recorded (showing latest 20)"
         };
 
         if (records.Count > 0)
         {
             HistoryEmptyNotice.Visibility = Visibility.Collapsed;
             HistoryScrollViewer.Visibility = Visibility.Visible;
-            HistoryItemsList.ItemsSource = records;
+            HistoryItemsList.ItemsSource = records.Take(20).ToList();
             ShareHistoryButton.IsEnabled = true;
             ClearHistoryButton.IsEnabled = true;
         }

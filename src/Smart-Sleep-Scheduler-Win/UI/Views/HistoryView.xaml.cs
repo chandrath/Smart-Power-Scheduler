@@ -12,6 +12,7 @@ public partial class HistoryView : UserControl
     public event Action? Closed;
 
     private List<SessionRecord> _allRecords = new();
+    private int _currentLimit = 50;
 
     public HistoryView()
     {
@@ -27,30 +28,65 @@ public partial class HistoryView : UserControl
         StatSleepTimeText.Text = sleepTime;
 
         _allRecords = HistoryService.GetHistory();
-        ApplyFilter();
+        _currentLimit = 50;
+        ApplyFilterAndSort();
     }
 
-    private void ApplyFilter()
+    private void ApplyFilterAndSort()
     {
-        if (FilterCombo == null || RecordsListBox == null) return;
+        if (FilterCombo == null || SortCombo == null || RecordsListBox == null) return;
 
         var now = DateTime.Now;
         IEnumerable<SessionRecord> filtered = FilterCombo.SelectedIndex switch
         {
-            1 => _allRecords.Where(r => r.Timestamp.Year == now.Year && r.Timestamp.Month == now.Month),
-            2 => _allRecords.Where(r => r.Timestamp.Year == now.Year),
-            3 => _allRecords.Where(r => r.Action == PowerAction.Sleep),
-            4 => _allRecords.Where(r => r.Action == PowerAction.Shutdown || r.Action == PowerAction.ForceShutdown),
+            1 => _allRecords.Where(r => r.Action == PowerAction.Sleep),
+            2 => _allRecords.Where(r => r.Action == PowerAction.Hibernate),
+            3 => _allRecords.Where(r => r.Action == PowerAction.Shutdown || r.Action == PowerAction.ForceShutdown),
+            4 => _allRecords.Where(r => r.Action == PowerAction.Restart || r.Action == PowerAction.ForceRestart),
+            5 => _allRecords.Where(r => r.Timestamp.Year == now.Year && r.Timestamp.Month == now.Month),
+            6 => _allRecords.Where(r => r.Timestamp.Year == now.Year),
             _ => _allRecords
         };
 
-        var list = filtered.ToList();
-        RecordsListBox.ItemsSource = list;
-        EmptyNoticePanel.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RecordsListBox.Visibility = list.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        IEnumerable<SessionRecord> sorted = SortCombo.SelectedIndex switch
+        {
+            1 => filtered.OrderBy(r => r.Timestamp),
+            2 => filtered.OrderByDescending(r => r.WakeUpTimestamp.HasValue ? (r.WakeUpTimestamp.Value - r.Timestamp).TotalSeconds : 0),
+            3 => filtered.OrderByDescending(r => r.ScheduledDurationSeconds),
+            _ => filtered.OrderByDescending(r => r.Timestamp)
+        };
+
+        var allFilteredList = sorted.ToList();
+        int totalCount = allFilteredList.Count;
+        var pagedList = allFilteredList.Take(_currentLimit).ToList();
+
+        RecordsListBox.ItemsSource = pagedList;
+        PagingCounterText.Text = totalCount <= _currentLimit
+            ? $"Showing all {totalCount} records"
+            : $"Showing {pagedList.Count} of {totalCount} records";
+
+        LoadMoreButton.Visibility = totalCount > _currentLimit ? Visibility.Visible : Visibility.Collapsed;
+        EmptyNoticePanel.Visibility = totalCount == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecordsListBox.Visibility = totalCount > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void FilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyFilter();
+    private void FilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _currentLimit = 50;
+        ApplyFilterAndSort();
+    }
+
+    private void SortCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _currentLimit = 50;
+        ApplyFilterAndSort();
+    }
+
+    private void LoadMoreButton_Click(object sender, RoutedEventArgs e)
+    {
+        _currentLimit += 50;
+        ApplyFilterAndSort();
+    }
 
     private void ExportButton_Click(object sender, RoutedEventArgs e)
     {
