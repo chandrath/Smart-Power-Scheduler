@@ -157,6 +157,39 @@ public static class SleepBlockerService
         return (false, null);
     }
 
+    public static bool TryCloseBlockerProcess(string? processName)
+    {
+        if (string.IsNullOrWhiteSpace(processName)) return false;
+        try
+        {
+            string cleanName = Path.GetFileNameWithoutExtension(processName);
+            var processes = Process.GetProcessesByName(cleanName);
+            bool anyTerminated = false;
+            foreach (var p in processes)
+            {
+                try
+                {
+                    p.CloseMainWindow();
+                    if (!p.WaitForExit(350))
+                    {
+                        p.Kill();
+                    }
+                    anyTerminated = true;
+                }
+                catch { }
+                finally
+                {
+                    p.Dispose();
+                }
+            }
+            return anyTerminated;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static void RelaunchAsAdministrator()
     {
         try

@@ -45,24 +45,16 @@ public partial class MainWindow : Window
     {
         HeaderTitleText.Text = AppConfig.Instance.App.DisplayName;
 
-        // Apply backdrop (Mica / Acrylic)
         WindowBackdropService.EnableMicaOrAcrylic(this, ThemeService.Instance.IsDarkActual);
-        ThemeService.Instance.ThemeChanged += isDark =>
-        {
-            WindowBackdropService.EnableMicaOrAcrylic(this, isDark);
-        };
+        ThemeService.Instance.ThemeChanged += isDark => WindowBackdropService.EnableMicaOrAcrylic(this, isDark);
 
-        // Apply Always on top preference
         Topmost = App.Settings.AlwaysOnTop;
         UpdatePinVisual();
         UpdateSoundVisual();
 
-        // Auto-start on launch
         if (App.Settings.AutoStartOnLaunch)
         {
-            int launchSeconds = App.Settings.AutoStartDurationSeconds > 0
-                ? App.Settings.AutoStartDurationSeconds
-                : 60;
+            int launchSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
             _readyDuration = TimeSpan.FromSeconds(launchSeconds);
             _timerService.Start(_readyDuration);
         }
@@ -75,10 +67,7 @@ public partial class MainWindow : Window
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
-        if (e.Mode == PowerModes.Resume)
-        {
-            Dispatcher.Invoke(ShowWakeUpView);
-        }
+        if (e.Mode == PowerModes.Resume) Dispatcher.Invoke(ShowWakeUpView);
     }
 
     private void ShowWakeUpView()
@@ -125,20 +114,20 @@ public partial class MainWindow : Window
             PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
             PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
 
-            // Lock adjustment buttons while running
-            MinusOneButton.IsEnabled = false;
-            MinusOneButton.Opacity = 0.35;
-            PlusOneButton.IsEnabled = false;
-            PlusOneButton.Opacity = 0.35;
-            PencilButton.IsEnabled = false;
-            PencilButton.Opacity = 0.35;
-            ResetButton.IsEnabled = false;
-            ResetButton.Opacity = 0.35;
-
-            // Lock Settings gear while countdown is running
-            GearButton.IsEnabled = false;
-            GearButton.Opacity = 0.35;
+            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = false;
+            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 0.35;
             GearButton.ToolTip = "Settings locked during active countdown";
+
+            UpdateDisplay(_timerService.RemainingTime);
+        }
+        else if (state == TimerState.Paused)
+        {
+            PrimaryActionButton.Content = "RESUME";
+            PrimaryActionButton.Style = (Style)FindResource("AccentButtonStyle");
+            PrimaryActionButton.ToolTip = "Resume Countdown";
+
+            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = false;
+            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 0.35;
 
             UpdateDisplay(_timerService.RemainingTime);
         }
@@ -147,17 +136,8 @@ public partial class MainWindow : Window
             PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
 
-            // Unlock adjustment buttons when stopped
-            PlusOneButton.IsEnabled = true;
-            PlusOneButton.Opacity = 1.0;
-            PencilButton.IsEnabled = true;
-            PencilButton.Opacity = 1.0;
-            ResetButton.IsEnabled = true;
-            ResetButton.Opacity = 1.0;
-
-            // Unlock Settings gear
-            GearButton.IsEnabled = true;
-            GearButton.Opacity = 1.0;
+            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = true;
+            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 1.0;
             GearButton.ToolTip = "Settings";
 
             BlockerWarningPill.Visibility = Visibility.Collapsed;
@@ -328,6 +308,10 @@ public partial class MainWindow : Window
         {
             _timerService.Stop();
         }
+        else if (_timerService.State == TimerState.Paused)
+        {
+            _timerService.Resume();
+        }
         else
         {
             CountdownControl.CommitIfEditing();
@@ -340,7 +324,9 @@ public partial class MainWindow : Window
 
     private void CheckForSleepBlockers()
     {
-        if (App.Settings.AllowForceActions || _blockerWarningDismissed) return;
+        var action = App.Settings.SelectedPowerAction;
+        bool isForce = action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart;
+        if (isForce) return;
 
         Task.Run(() =>
         {
@@ -349,37 +335,70 @@ public partial class MainWindow : Window
             {
                 Dispatcher.Invoke(() =>
                 {
-                    if (_blockerWarningDismissed || App.Settings.AllowForceActions) return;
                     _currentBlockerName = blockerName;
+                    string actName = PowerService.GetActionDisplayName(action);
                     BlockerWarningText.Text = $"Blocker: {blockerName}";
-                    BlockerDialogMessage.Text = $"Active application '{blockerName}' may prevent normal Windows sleep.\n\nYou can switch to Force Sleep to guarantee sleep, or dismiss this warning.";
                     BlockerWarningPill.Visibility = Visibility.Visible;
+
+                    if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
+                    {
+                        _timerService.Pause();
+                        BlockerDialogTitle.Text = "⚠️ Timer Paused: Blocker Detected";
+                        BlockerDialogMessage.Text = $"Application '{blockerName}' is actively preventing scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
+                        CloseBlockerAndResumeButton.Content = $"🛑 Close {blockerName} & Resume";
+                        BlockerDialogOverlay.Visibility = Visibility.Visible;
+                    }
                 });
             }
             else
             {
-                Dispatcher.Invoke(() => BlockerWarningPill.Visibility = Visibility.Collapsed);
+                Dispatcher.Invoke(() =>
+                {
+                    _currentBlockerName = null;
+                    _blockerWarningDismissed = false;
+                    BlockerWarningPill.Visibility = Visibility.Collapsed;
+                    BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+                });
             }
         });
     }
 
-    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e) =>
-        BlockerDialogOverlay.Visibility = Visibility.Visible;
-
-    private void SwitchToForceSleepButton_Click(object sender, RoutedEventArgs e)
+    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        App.Settings.AllowForceActions = true;
-        App.Settings.Save();
+        string actName = PowerService.GetActionDisplayName(App.Settings.SelectedPowerAction);
+        BlockerDialogTitle.Text = _timerService.State == TimerState.Paused
+            ? "⚠️ Timer Paused: Blocker Detected"
+            : "⚠️ Blocker Active";
+        BlockerDialogMessage.Text = $"Application '{_currentBlockerName ?? "Unknown"}' may prevent scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
+        CloseBlockerAndResumeButton.Content = $"🛑 Close {_currentBlockerName ?? "Blocker"} & Resume";
+        BlockerDialogOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void CloseBlockerAndResumeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(_currentBlockerName))
+        {
+            SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
+        }
+        _currentBlockerName = null;
+        _blockerWarningDismissed = true;
         BlockerDialogOverlay.Visibility = Visibility.Collapsed;
         BlockerWarningPill.Visibility = Visibility.Collapsed;
-        _blockerWarningDismissed = true;
+        if (_timerService.State == TimerState.Paused) _timerService.Resume();
     }
 
     private void DismissBlockerWarningButton_Click(object sender, RoutedEventArgs e)
     {
         BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-        BlockerWarningPill.Visibility = Visibility.Collapsed;
         _blockerWarningDismissed = true;
+        BlockerWarningPill.Visibility = Visibility.Visible;
+        if (_timerService.State == TimerState.Paused) _timerService.Resume();
+    }
+
+    private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+        _timerService.Stop();
     }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
@@ -387,27 +406,24 @@ public partial class MainWindow : Window
         if (_timerService.State != TimerState.Stopped) return;
         CountdownControl.CancelInlineEdit();
         _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
-        UpdateDisplay(_readyDuration);
-        UpdateStartButtonContent();
-        UpdateMinusButtonState(_readyDuration);
+        AdjustDuration(TimeSpan.Zero);
     }
 
     private void MinusOneButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State != TimerState.Stopped) return;
-        if (_readyDuration > TimeSpan.FromMinutes(1))
-        {
-            _readyDuration = _readyDuration.Subtract(TimeSpan.FromMinutes(1));
-            UpdateDisplay(_readyDuration);
-            UpdateStartButtonContent();
-            UpdateMinusButtonState(_readyDuration);
-        }
+        if (_timerService.State == TimerState.Stopped && _readyDuration > TimeSpan.FromMinutes(1))
+            AdjustDuration(TimeSpan.FromMinutes(-1));
     }
 
     private void PlusOneButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State != TimerState.Stopped) return;
-        _readyDuration = _readyDuration.Add(TimeSpan.FromMinutes(1));
+        if (_timerService.State == TimerState.Stopped)
+            AdjustDuration(TimeSpan.FromMinutes(1));
+    }
+
+    private void AdjustDuration(TimeSpan delta)
+    {
+        _readyDuration = _readyDuration.Add(delta);
         UpdateDisplay(_readyDuration);
         UpdateStartButtonContent();
         UpdateMinusButtonState(_readyDuration);

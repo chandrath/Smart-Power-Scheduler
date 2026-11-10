@@ -7,18 +7,11 @@ using System.Text;
 
 /// <summary>
 /// Handles rich, anti-aliased audio feedback for countdown ticks, toggle testing, and timer completion.
-/// Uses native Win32 winmm PlaySound with fresh in-memory PCM WAV streams.
+/// Uses SoundPlayer with in-memory PCM WAV streams on background worker threads.
 /// Supports user volume slider (10% - 100%) and sound schemes (Modern, Classic, Soft).
 /// </summary>
 public static class SoundService
 {
-    [DllImport("winmm.dll", SetLastError = true)]
-    private static extern bool PlaySound(byte[] ptrToSound, IntPtr hmod, uint fdwSound);
-
-    private const uint SND_ASYNC = 0x0001;
-    private const uint SND_MEMORY = 0x0004;
-    private const uint SND_NODEFAULT = 0x0002;
-
     public static void PlayTick()
     {
         if (!App.Settings.SoundEnabled) return;
@@ -42,22 +35,27 @@ public static class SoundService
     {
         double rawVolume = (volumeOverride ?? App.Settings.SoundVolume) / 100.0;
         rawVolume = Math.Clamp(rawVolume, 0.05, 1.0);
-        // Perceptual acoustic loudness curve: quadratic response prevents harsh ear-blasting
-        double volume = Math.Pow(rawVolume, 2.2) * 0.55;
+        // Perceptual acoustic loudness curve: mild power curve for clear, comfortable sound
+        double volume = Math.Pow(rawVolume, 1.4) * 0.75;
 
         string scheme = schemeOverride ?? App.Settings.SoundScheme ?? "Modern";
 
         var tones = GetTonesForScheme(scheme, type);
         byte[] wav = GenerateWav(tones, volume);
 
-        try
+        ThreadPool.QueueUserWorkItem(_ =>
         {
-            PlaySound(wav, IntPtr.Zero, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
-        }
-        catch
-        {
-            try { SystemSounds.Asterisk.Play(); } catch { }
-        }
+            try
+            {
+                using var ms = new MemoryStream(wav);
+                using var player = new SoundPlayer(ms);
+                player.PlaySync();
+            }
+            catch
+            {
+                try { SystemSounds.Asterisk.Play(); } catch { }
+            }
+        });
     }
 
     private static (double freq, int ms)[] GetTonesForScheme(string scheme, ToneType type) => (scheme, type) switch

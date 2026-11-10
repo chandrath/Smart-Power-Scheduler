@@ -10,26 +10,38 @@
             BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="1"
             CornerRadius="12"
-            Padding="20">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Header with Close Button -->
-                <Grid Margin="0,0,0,16">
-                    <TextBlock Text="Settings &amp; Preferences"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button x:Name="CloseButton"
-                            HorizontalAlignment="Right"
-                            Style="{StaticResource IconButtonStyle}"
-                            Click="CloseButton_Click"
-                            ToolTip="Close Settings (Esc)">
-                        <TextBlock Text="✕" FontSize="14" FontWeight="Bold" />
-                    </Button>
-                </Grid>
+            Padding="20,16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-                <!-- Section: Default Timer Duration -->
+            <!-- Row 0: Fixed Header with Close Button -->
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock Text="Settings &amp; Preferences"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="CloseButton"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource IconButtonStyle}"
+                        Click="CloseButton_Click"
+                        ToolTip="Close Settings (Esc)">
+                    <TextBlock Text="✕" FontSize="14" FontWeight="Bold" />
+                </Button>
+            </Grid>
+
+            <!-- Row 1: Scrollable Settings List -->
+            <ScrollViewer x:Name="SettingsScrollViewer"
+                          Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="0,0,6,0"
+                          Margin="0,0,0,12">
+                <StackPanel>
+                    <!-- Section: Default Timer Duration -->
                 <Border Background="{DynamicResource SolidCardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
                         BorderThickness="1"
@@ -254,7 +266,8 @@
                                 Padding="10"
                                 Margin="0,10,0,0"
                                 Visibility="Collapsed">
-                            <TextBlock Text="⚠️ Warning: Force actions will terminate unsaved documents immediately."
+                            <TextBlock x:Name="ForceWarningText"
+                                       Text="⚠️ Warning: Force actions will terminate unsaved documents immediately."
                                        FontSize="11"
                                        Foreground="{DynamicResource UrgencyBrush}"
                                        TextWrapping="Wrap" />
@@ -371,25 +384,35 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Bottom Action Buttons -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="10" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Button x:Name="ResetDefaultsButton"
-                            Grid.Column="0"
-                            Content="Reset Defaults"
-                            Style="{StaticResource FluentButtonStyle}"
-                            Click="ResetDefaultsButton_Click" />
-                    <Button x:Name="SaveButton"
-                            Grid.Column="2"
-                            Content="Save &amp; Apply"
-                            Style="{StaticResource AccentButtonStyle}"
-                            Click="SaveButton_Click" />
-                </Grid>
             </StackPanel>
         </ScrollViewer>
-    </Border>
+
+        <!-- Row 2: Fixed Persistent Footer Bar -->
+        <Border Grid.Row="2"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="ResetDefaultsButton"
+                        Grid.Column="0"
+                        Content="Reset Defaults"
+                        Style="{StaticResource FluentButtonStyle}"
+                        Height="38"
+                        Click="ResetDefaultsButton_Click" />
+                <Button x:Name="SaveButton"
+                        Grid.Column="2"
+                        Content="Save &amp; Close"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Height="38"
+                        FontWeight="Bold"
+                        Click="SaveButton_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Border>
 </UserControl>

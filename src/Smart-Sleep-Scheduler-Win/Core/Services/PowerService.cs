@@ -24,14 +24,9 @@ public static class PowerService
             switch (action)
             {
                 case PowerAction.Sleep:
-                    // Request Windows Sleep (Standby S3/Modern Standby) safely.
-                    // Do not hibernate, do not force critical suspension, allow wake events.
+                    // Safe Sleep: Standby S3/Modern Standby
                     bool sleepSuccess = SetSuspendState(hibernate: false, forceCritical: false, disableWakeEvent: false);
-                    if (!sleepSuccess)
-                    {
-                        // Fallback attempt via SetSystemPowerState
-                        SetSystemPowerState(fSuspend: true, fForce: false);
-                    }
+                    if (!sleepSuccess) SetSystemPowerState(fSuspend: true, fForce: false);
                     return true;
 
                 case PowerAction.Hibernate:
@@ -82,5 +77,23 @@ public static class PowerService
         };
         using var process = Process.Start(psi);
     }
+
+    public static string GetActionDisplayName(PowerAction action) => action switch
+    {
+        PowerAction.Sleep => "Sleep",
+        PowerAction.Hibernate => "Hibernate",
+        PowerAction.Shutdown => "Shutdown",
+        PowerAction.Restart => "Restart",
+        PowerAction.ForceShutdown => "Force Shutdown",
+        PowerAction.ForceRestart => "Force Restart",
+        _ => "Sleep"
+    };
+
+    public static PowerAction GetForceEquivalent(PowerAction action) => action switch
+    {
+        PowerAction.Shutdown => PowerAction.ForceShutdown,
+        PowerAction.Restart => PowerAction.ForceRestart,
+        _ => action
+    };
 }
 

@@ -2,7 +2,9 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using SmartSleepScheduler.Config;
 using SmartSleepScheduler.Core;
 using SmartSleepScheduler.Core.Services;
@@ -19,7 +21,35 @@ public partial class SettingsFlyout : UserControl
     public SettingsFlyout()
     {
         InitializeComponent();
+        AddHandler(PreviewMouseWheelEvent, new MouseWheelEventHandler(OnFlyoutPreviewMouseWheel), true);
         LoadValues();
+    }
+
+    private void OnFlyoutPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // If mouse is inside an open popup dropdown, allow scrolling the dropdown items
+        if (e.OriginalSource is DependencyObject d)
+        {
+            var popup = FindVisualAncestor<Popup>(d);
+            if (popup != null && popup.IsOpen) return;
+        }
+
+        // Otherwise, bubble wheel event to the Settings scroll viewer so controls don't change value accidentally
+        if (SettingsScrollViewer != null)
+        {
+            e.Handled = true;
+            SettingsScrollViewer.ScrollToVerticalOffset(SettingsScrollViewer.VerticalOffset - (e.Delta > 0 ? 44 : -44));
+        }
+    }
+
+    private static T? FindVisualAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current != null)
+        {
+            if (current is T t) return t;
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
     }
 
     public void LoadValues()
@@ -135,11 +165,17 @@ public partial class SettingsFlyout : UserControl
 
     private void PowerActionCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ForceWarningBanner == null) return;
+        if (ForceWarningBanner == null || ForceWarningText == null) return;
         var action = (PowerAction)PowerActionCombo.SelectedIndex;
-        ForceWarningBanner.Visibility = (action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart)
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        if (action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart)
+        {
+            ForceWarningBanner.Visibility = Visibility.Visible;
+            ForceWarningText.Text = "⚠️ Warning: Force actions will terminate open applications and unsaved documents immediately.";
+        }
+        else
+        {
+            ForceWarningBanner.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void ThemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -148,9 +148,20 @@ public partial class CountdownDisplay : UserControl
 
     private void ConfigureActionTypography(PowerAction action, TimerState state)
     {
+        if (state == TimerState.Paused)
+        {
+            TopHeaderText.Text = "COUNTDOWN PAUSED";
+            TopHeaderText.Visibility = Visibility.Visible;
+            ActionLabelText.Text = "⚠️ BLOCKED";
+            ActionLabelText.Foreground = (Brush)FindResource("UrgencyBrush");
+            ProgressTrackRing.Stroke = (Brush)FindResource("UrgencyBrush");
+            return;
+        }
+
         if (state == TimerState.Running)
         {
             TopHeaderText.Text = "YOUR PC WILL BE";
+            TopHeaderText.Visibility = Visibility.Visible;
             ActionLabelText.Text = action switch
             {
                 PowerAction.Sleep => "🌙 ASLEEP",

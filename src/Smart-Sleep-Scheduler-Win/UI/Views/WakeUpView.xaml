@@ -14,9 +14,10 @@
                 Padding="24"
                 Width="350">
             <StackPanel HorizontalAlignment="Center">
-                <!-- Emoji Header -->
-                <TextBlock Text="☕"
-                           FontSize="42"
+                <!-- Colorful Morning Greeting Emoji -->
+                <TextBlock Text="🌅"
+                           FontFamily="Segoe UI Emoji, Noto Color Emoji, sans-serif"
+                           FontSize="46"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,10" />
 

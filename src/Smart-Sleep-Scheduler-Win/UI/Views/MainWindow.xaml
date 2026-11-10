@@ -215,7 +215,7 @@
             <Grid x:Name="BlockerDialogOverlay"
                   Background="#CC000000"
                   Visibility="Collapsed">
-                <Border Width="330"
+                <Border Width="340"
                         Background="{DynamicResource SolidCardBackgroundBrush}"
                         BorderBrush="{DynamicResource UrgencyBrush}"
                         BorderThickness="1.5"
@@ -224,29 +224,37 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
                     <StackPanel>
-                        <TextBlock Text="⚠️ Sleep Blocker Detected"
+                        <TextBlock x:Name="BlockerDialogTitle"
+                                   Text="⚠️ Timer Paused: Blocker Detected"
                                    FontSize="15"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource UrgencyBrush}"
                                    Margin="0,0,0,6" />
                         <TextBlock x:Name="BlockerDialogMessage"
-                                   Text="An active application may prevent normal Windows sleep."
+                                   Text="An active application may prevent normal Windows power action."
                                    FontSize="11.5"
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,0,0,16" />
-                        <Button x:Name="SwitchToForceSleepButton"
-                                Content="⚡ Enable Force Sleep (Guaranteed)"
+                        <Button x:Name="CloseBlockerAndResumeButton"
+                                Content="🛑 Close Blocker &amp; Resume"
                                 Style="{StaticResource DangerButtonStyle}"
                                 Height="38"
                                 FontWeight="Bold"
                                 Margin="0,0,0,8"
-                                Click="SwitchToForceSleepButton_Click" />
+                                Click="CloseBlockerAndResumeButton_Click" />
                         <Button x:Name="DismissBlockerWarningButton"
-                                Content="Dismiss &amp; Ignore"
+                                Content="Ignore &amp; Resume Timer"
                                 Style="{StaticResource FluentButtonStyle}"
                                 Height="34"
+                                Margin="0,0,0,8"
                                 Click="DismissBlockerWarningButton_Click" />
+                        <Button x:Name="StopBlockerTimerButton"
+                                Content="Stop Countdown"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Height="32"
+                                Opacity="0.8"
+                                Click="StopBlockerTimerButton_Click" />
                     </StackPanel>
                 </Border>
             </Grid>
