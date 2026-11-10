@@ -94,9 +94,21 @@ public partial class MainWindow : Window
             int remainingSecs = (int)Math.Ceiling(remaining.TotalSeconds);
             if (remainingSecs != _lastMilestoneChecked)
             {
-                bool shouldCheck = remainingSecs == 5 || (App.Settings.PeriodicBlockerScanEnabled
-                    ? (remainingSecs % Math.Max(10, App.Settings.PeriodicBlockerScanIntervalSeconds) == 0)
-                    : Array.IndexOf(AppConfig.Instance.Defaults.BlockerCheckMilestonesSeconds, remainingSecs) >= 0);
+                bool shouldCheck = false;
+                if (remainingSecs == 5)
+                {
+                    shouldCheck = true; // Final 5-second sanity check before 0
+                }
+                else if (App.Settings.PeriodicBlockerScanEnabled)
+                {
+                    int interval = Math.Max(10, App.Settings.PeriodicBlockerScanIntervalSeconds);
+                    shouldCheck = (remainingSecs % interval == 0);
+                }
+                else
+                {
+                    var milestones = AppConfig.Instance.Defaults.BlockerCheckMilestonesSeconds;
+                    shouldCheck = Array.IndexOf(milestones, remainingSecs) >= 0;
+                }
 
                 if (shouldCheck)
                 {
@@ -141,6 +153,7 @@ public partial class MainWindow : Window
             MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 1.0;
             GearButton.ToolTip = "Settings";
 
+            _blockerWarningDismissed = false;
             BlockerWarningPill.Visibility = Visibility.Collapsed;
             BlockerDialogOverlay.Visibility = Visibility.Collapsed;
 
@@ -172,6 +185,7 @@ public partial class MainWindow : Window
 
     private void OnTimerCompleted()
     {
+        _blockerWarningDismissed = false;
         SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
         if (!PowerService.ExecuteAction(action, out string error) && !string.IsNullOrWhiteSpace(error))
@@ -311,8 +325,8 @@ public partial class MainWindow : Window
             CountdownControl.CommitIfEditing();
             _lastMilestoneChecked = -1;
             _blockerWarningDismissed = false;
-            CheckForSleepBlockers();
             _timerService.Start(_readyDuration);
+            CheckForSleepBlockers();
         }
     }
 
@@ -332,15 +346,17 @@ public partial class MainWindow : Window
                     BlockerWarningText.Text = $"Blocker: {blockerName}";
                     BlockerWarningPill.Visibility = Visibility.Visible;
 
-                    if (isStartup)
-                    {
-                        if (App.Settings.StartupBlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
-                    }
-                    else if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
+                    if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
                     {
                         _timerService.Pause();
                         if (App.Settings.BlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
                         ShowBlockerDialog("⚠️ Timer Paused: Blocker Detected");
+                    }
+                    else if (_timerService.State == TimerState.Stopped && !_blockerWarningDismissed)
+                    {
+                        if (isStartup && App.Settings.StartupBlockerAlertSoundEnabled)
+                            SoundService.PlayBlockerAlert();
+                        ShowBlockerDialog("⚠️ Blocker Detected: Action Required");
                     }
                 }
                 else
@@ -372,7 +388,7 @@ public partial class MainWindow : Window
         if (!string.IsNullOrWhiteSpace(_currentBlockerName))
             SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
         _currentBlockerName = null;
-        _blockerWarningDismissed = true;
+        _blockerWarningDismissed = false;
         BlockerDialogOverlay.Visibility = Visibility.Collapsed;
         BlockerWarningPill.Visibility = Visibility.Collapsed;
         if (_timerService.State == TimerState.Paused) _timerService.Resume();
@@ -431,35 +447,11 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.Escape)
         {
-            if (BlockerDialogOverlay.Visibility == Visibility.Visible)
-            {
-                BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-                e.Handled = true;
-                return;
-            }
-            if (WakeUpOverlay.Visibility == Visibility.Visible)
-            {
-                WakeUpOverlay.Visibility = Visibility.Collapsed;
-                e.Handled = true;
-                return;
-            }
-            if (SettingsOverlay.Visibility == Visibility.Visible)
-            {
-                SettingsOverlay.Visibility = Visibility.Collapsed;
-                e.Handled = true;
-                return;
-            }
-            if (_isFullscreen)
-            {
-                ToggleFullscreen();
-                e.Handled = true;
-                return;
-            }
-            if (_timerService.State == TimerState.Running)
-            {
-                _timerService.Stop();
-                e.Handled = true;
-            }
+            if (BlockerDialogOverlay.Visibility == Visibility.Visible) { BlockerDialogOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
+            if (WakeUpOverlay.Visibility == Visibility.Visible) { WakeUpOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
+            if (SettingsOverlay.Visibility == Visibility.Visible) { SettingsOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
+            if (_isFullscreen) { ToggleFullscreen(); e.Handled = true; return; }
+            if (_timerService.State == TimerState.Running) { _timerService.Stop(); e.Handled = true; }
         }
         else if (e.Key == Key.F11)
         {

@@ -308,11 +308,27 @@
                                   Margin="0,0,0,8" />
 
                         <CheckBox x:Name="PeriodicBlockerScanCheck"
-                                  Content="Active scanning while timer runs (every 30s)"
+                                  Content="Background scan for blockers"
                                   FontSize="12"
                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                   IsChecked="False"
-                                  Margin="0,0,0,0" />
+                                  Checked="PeriodicBlockerScanCheck_Changed"
+                                  Unchecked="PeriodicBlockerScanCheck_Changed"
+                                  Margin="0,0,0,6" />
+
+                        <!-- Periodic Scan Interval Options (Visible when enabled) -->
+                        <StackPanel x:Name="PeriodicScanIntervalPanel" Margin="20,0,0,0" Visibility="Collapsed">
+                            <TextBlock Text="Scan Interval"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,0,0,4" />
+                            <ComboBox x:Name="PeriodicScanIntervalCombo">
+                                <ComboBoxItem Content="Every 15 seconds" />
+                                <ComboBoxItem Content="Every 20 seconds" />
+                                <ComboBoxItem Content="Every 30 seconds" IsSelected="True" />
+                                <ComboBoxItem Content="Every 60 seconds" />
+                            </ComboBox>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

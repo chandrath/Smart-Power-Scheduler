@@ -131,6 +131,20 @@ public partial class SettingsFlyout : UserControl
         StartupBlockerSoundCheck.IsChecked = s.StartupBlockerAlertSoundEnabled;
         BlockerAlertSoundCheck.IsChecked = s.BlockerAlertSoundEnabled;
         PeriodicBlockerScanCheck.IsChecked = s.PeriodicBlockerScanEnabled;
+        PeriodicScanIntervalPanel.Visibility = s.PeriodicBlockerScanEnabled ? Visibility.Visible : Visibility.Collapsed;
+        PeriodicScanIntervalCombo.SelectedIndex = s.PeriodicBlockerScanIntervalSeconds switch
+        {
+            15 => 0,
+            20 => 1,
+            60 => 3,
+            _ => 2
+        };
+    }
+
+    private void PeriodicBlockerScanCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (PeriodicScanIntervalPanel == null) return;
+        PeriodicScanIntervalPanel.Visibility = (PeriodicBlockerScanCheck.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static void DecomposeSeconds(int totalSeconds, out int value, out int unitIndex)
@@ -287,6 +301,13 @@ public partial class SettingsFlyout : UserControl
         s.StartupBlockerAlertSoundEnabled = StartupBlockerSoundCheck.IsChecked ?? true;
         s.BlockerAlertSoundEnabled = BlockerAlertSoundCheck.IsChecked ?? true;
         s.PeriodicBlockerScanEnabled = PeriodicBlockerScanCheck.IsChecked ?? false;
+        s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch
+        {
+            0 => 15,
+            1 => 20,
+            3 => 60,
+            _ => 30
+        };
 
         s.Save();
         SettingsChanged?.Invoke();
@@ -314,6 +335,7 @@ public partial class SettingsFlyout : UserControl
         s.StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
         s.BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
         s.PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
+        s.PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds;
 
         s.Save();
         LoadValues();
