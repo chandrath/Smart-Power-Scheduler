@@ -37,69 +37,53 @@
                          StrokeThickness="3.5"
                          Opacity="0.45" />
 
-                <!-- Unified Single StackPanel: Zero Dead Space, Heavy Bold Lockup -->
+                <!-- Single Vertically Centered Stack: Dead-Center & Zero Clutter -->
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center">
 
-                    <!-- Heavy Bold Headline from Mockup -->
+                    <!-- Line 1: Headline (YOUR PC WILL BE or SMART SLEEP TIMER) -->
                     <TextBlock x:Name="TopHeaderText"
                                Text="YOUR PC WILL BE"
-                               FontSize="27"
+                               FontSize="22"
                                FontWeight="Black"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
-                               Margin="0,0,0,4" />
+                               Margin="0,0,0,2" />
 
-                    <!-- Prominent Action Badge (Tight 4px Under Header) -->
-                    <Border x:Name="ActionBadge"
-                            Background="{DynamicResource ButtonBackgroundBrush}"
-                            BorderBrush="#5538BDF8"
-                            BorderThickness="1.5"
-                            CornerRadius="16"
-                            Padding="18,5"
-                            Margin="0,0,0,6"
-                            HorizontalAlignment="Center">
-                        <TextBlock x:Name="ActionBadgeText"
-                                   Text="🌙 SLEEP"
-                                   FontSize="13"
-                                   FontWeight="Bold"
-                                   Foreground="{DynamicResource AccentBrush}"
-                                   FontFamily="Segoe UI Variable Text, Segoe UI" />
-                    </Border>
+                    <!-- Line 2: Action Label Pure Typography (No Pill!) -->
+                    <TextBlock x:Name="ActionLabelText"
+                               Text="🌙 ASLEEP"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{DynamicResource AccentBrush}"
+                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
+                               Margin="0,0,0,8" />
 
-                    <!-- Countdown Digits Row (IN + 01:00 + Live Dot) -->
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <!-- 'IN ' prefix -->
-                        <TextBlock x:Name="InPrefixText"
-                                   Text="IN "
-                                   FontSize="22"
-                                   FontWeight="Black"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,6,4,0"
-                                   FontFamily="Segoe UI Variable Display, Segoe UI" />
-
-                        <!-- Big Countdown Digits -->
+                    <!-- Dead-Center Countdown Digits with Centered Live Warning Dot -->
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <!-- Big Countdown Digits (Perfect Horizontal Center) -->
                         <TextBlock x:Name="TimeText"
                                    Text="01:00"
-                                   FontSize="52"
+                                   FontSize="56"
                                    FontWeight="Black"
                                    Cursor="Hand"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
                                    ToolTip="Click to type custom duration"
                                    MouseDown="TimeText_MouseDown"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
 
-                        <!-- Inline Edit Box (Appears only on click / pencil) -->
+                        <!-- Inline Edit Box (Appears on click / pencil) -->
                         <TextBox x:Name="TimeEditBox"
                                  Text="01:00"
-                                 FontSize="36"
+                                 FontSize="38"
                                  FontWeight="Black"
-                                 Width="130"
+                                 Width="140"
                                  TextAlignment="Center"
                                  VerticalAlignment="Center"
                                  BorderThickness="1"
@@ -110,22 +94,23 @@
                                  KeyDown="TimeEditBox_KeyDown"
                                  LostFocus="TimeEditBox_LostFocus" />
 
-                        <!-- Live Warning Blinking Red Dot (< 60s) -->
+                        <!-- Live Warning Blinking Red Dot (Floats to the right of centered digits) -->
                         <Ellipse x:Name="LiveBlinkDot"
                                  Width="10" Height="10"
                                  Fill="{DynamicResource UrgencyBrush}"
-                                 Margin="8,0,0,0"
+                                 HorizontalAlignment="Right"
                                  VerticalAlignment="Center"
+                                 Margin="0,0,-18,0"
                                  Visibility="Collapsed" />
-                    </StackPanel>
+                    </Grid>
 
-                    <!-- Status sub-label -->
+                    <!-- Status Sub-label -->
                     <TextBlock x:Name="StatusSubText"
                                Text="Scheduled Sleep"
                                FontSize="12"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center"
-                               Margin="0,4,0,0"
+                               Margin="0,6,0,0"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                FontFamily="Segoe UI Variable Text, Segoe UI" />
                 </StackPanel>

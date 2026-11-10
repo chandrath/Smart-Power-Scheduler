@@ -50,6 +50,7 @@ public partial class MainWindow : Window
         // Apply Always on top preference
         Topmost = App.Settings.AlwaysOnTop;
         UpdatePinVisual();
+        UpdateSoundVisual();
 
         // Auto-start on launch
         if (App.Settings.AutoStartOnLaunch)
@@ -197,6 +198,23 @@ public partial class MainWindow : Window
             UpdateDisplay(_timerService.RemainingTime);
             UpdateMinusButtonState(_timerService.RemainingTime);
         }
+    }
+
+    private void SoundButton_Click(object sender, RoutedEventArgs e)
+    {
+        App.Settings.SoundEnabled = !App.Settings.SoundEnabled;
+        App.Settings.Save();
+        UpdateSoundVisual();
+    }
+
+    private void UpdateSoundVisual()
+    {
+        bool sound = App.Settings.SoundEnabled;
+        SoundButton.Opacity = sound ? 1.0 : 0.45;
+        SoundIconText.Text = sound ? "🔊" : "🔇";
+        SoundIconText.Foreground = sound
+            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
+            : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
     }
 
     private void PinButton_Click(object sender, RoutedEventArgs e)

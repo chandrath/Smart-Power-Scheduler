@@ -11,7 +11,8 @@ namespace SmartSleepScheduler.Config;
 public sealed class UserSettings
 {
     private static readonly string SettingsDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        AppConfig.Instance.App.Vendor,
         AppConfig.Instance.App.Name
     );
 
@@ -19,6 +20,7 @@ public sealed class UserSettings
 
     public AppTheme Theme { get; set; }
     public bool AlwaysOnTop { get; set; }
+    public bool SoundEnabled { get; set; }
     public int DefaultTimerDurationSeconds { get; set; }
     public bool AutoStartOnLaunch { get; set; }
     public int AutoStartDurationSeconds { get; set; }
@@ -32,6 +34,7 @@ public sealed class UserSettings
         var defaults = AppConfig.Instance.Defaults;
         Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         AlwaysOnTop = defaults.AlwaysOnTop;
+        SoundEnabled = defaults.SoundEnabled;
         DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
         AutoStartOnLaunch = defaults.AutoStartOnLaunch;
         AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;

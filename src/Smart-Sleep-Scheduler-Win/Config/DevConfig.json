@@ -9,14 +9,15 @@
     "DisplayName": "Smart Sleep Scheduler",
     "Description": "A clean, modern Windows smart sleep timer and power scheduler with Fluent translucent design.",
     "Version": "0.9.0.1",
-    "Vendor": "SmartSleep",
-    "Copyright": "Copyright © 2026 SmartSleep",
+    "Vendor": "Appsphinx",
+    "Copyright": "Copyright © 2026 Appsphinx",
     "AppId": "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B",
     "RepositoryUrl": "https://github.com/chandrath/Smart-Sleep-Scheduler"
   },
   "Defaults": {
     "Theme": "Dark",
     "AlwaysOnTop": true,
+    "SoundEnabled": false,
     "DefaultTimerDurationSeconds": 180,
     "AutoStartOnLaunch": true,
     "AutoStartDurationSeconds": 60,

@@ -60,8 +60,8 @@ public sealed class AppMetadata
     public string DisplayName { get; set; } = "Smart Sleep Scheduler";
     public string Description { get; set; } = "A clean, modern Windows smart sleep timer and power scheduler with Fluent translucent design.";
     public string Version { get; set; } = "0.9.0.1";
-    public string Vendor { get; set; } = "SmartSleep";
-    public string Copyright { get; set; } = "Copyright © 2026 SmartSleep";
+    public string Vendor { get; set; } = "Appsphinx";
+    public string Copyright { get; set; } = "Copyright © 2026 Appsphinx";
     public string AppId { get; set; } = "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B";
     public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Sleep-Scheduler";
 }
@@ -70,6 +70,7 @@ public sealed class AppDefaults
 {
     public string Theme { get; set; } = "Dark";
     public bool AlwaysOnTop { get; set; } = true;
+    public bool SoundEnabled { get; set; } = false;
     public int DefaultTimerDurationSeconds { get; set; } = 180;
     public bool AutoStartOnLaunch { get; set; } = true;
     public int AutoStartDurationSeconds { get; set; } = 60;

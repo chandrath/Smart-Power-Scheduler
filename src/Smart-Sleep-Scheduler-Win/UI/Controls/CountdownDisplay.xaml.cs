@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -6,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using SmartSleepScheduler.Config;
 using SmartSleepScheduler.Core;
+using SmartSleepScheduler.Core.Services;
 
 namespace SmartSleepScheduler.UI.Controls;
 
@@ -15,6 +15,7 @@ public partial class CountdownDisplay : UserControl
     private Storyboard? _dotBlinkStoryboard;
     private bool _isUrgent;
     private bool _isDotBlinking;
+    private int _lastSoundSecond = -1;
 
     public event Action<TimeSpan>? CustomDurationSet;
 
@@ -72,18 +73,30 @@ public partial class CountdownDisplay : UserControl
             TimeEditBox.Text = formattedTime;
         }
 
-        // 2. Configure Action Badge & Theming
-        ConfigureActionBadge(action);
+        // 2. Configure Action Typography (Pure Text, No Pill!)
+        ConfigureActionTypography(action, state);
 
-        // 3. Format Sub-Status (Header stays punchy: YOUR PC WILL BE)
-        TopHeaderText.Text = "YOUR PC WILL BE";
-        InPrefixText.Visibility = Visibility.Visible;
-
+        // 3. Status Subtext
         StatusSubText.Text = state == TimerState.Running
             ? $"Scheduled {GetActionFriendlyName(action)}"
             : "Ready to schedule";
 
-        // 4. Live Blinking Dot (< 60s while running)
+        // 4. Sound Tick in Final 5 Seconds
+        if (state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= 5)
+        {
+            int currentSecond = (int)Math.Ceiling(remaining.TotalSeconds);
+            if (currentSecond != _lastSoundSecond)
+            {
+                _lastSoundSecond = currentSecond;
+                SoundService.PlayTick();
+            }
+        }
+        else if (state != TimerState.Running)
+        {
+            _lastSoundSecond = -1;
+        }
+
+        // 5. Live Blinking Dot (< 60s while running)
         bool shouldBlinkDot = state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= 60;
         if (shouldBlinkDot && !_isDotBlinking)
         {
@@ -98,7 +111,7 @@ public partial class CountdownDisplay : UserControl
             _dotBlinkStoryboard?.Stop(this);
         }
 
-        // 5. Ambient Red Urgency Pulse (<= 30s while running)
+        // 6. Ambient Red Urgency Pulse (<= 30s while running)
         int threshold = AppConfig.Instance.Defaults.UrgencyWarningThresholdSeconds;
         bool shouldBeUrgent = state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= threshold;
 
@@ -112,43 +125,61 @@ public partial class CountdownDisplay : UserControl
         }
     }
 
-    private void ConfigureActionBadge(PowerAction action)
+    private void ConfigureActionTypography(PowerAction action, TimerState state)
     {
+        if (state == TimerState.Running)
+        {
+            TopHeaderText.Text = "YOUR PC WILL BE";
+            ActionLabelText.Text = action switch
+            {
+                PowerAction.Sleep => "🌙 ASLEEP",
+                PowerAction.Hibernate => "❄️ HIBERNATED",
+                PowerAction.Shutdown => "🛑 SHUT DOWN",
+                PowerAction.Restart => "🔄 RESTARTED",
+                PowerAction.ForceShutdown => "⚡ FORCE SHUT DOWN",
+                PowerAction.ForceRestart => "⚡ FORCE RESTARTED",
+                _ => "🌙 ASLEEP"
+            };
+        }
+        else
+        {
+            TopHeaderText.Text = "SMART SLEEP TIMER";
+            ActionLabelText.Text = action switch
+            {
+                PowerAction.Sleep => "🌙 Sleep Mode",
+                PowerAction.Hibernate => "❄️ Hibernate Mode",
+                PowerAction.Shutdown => "🛑 Shutdown Mode",
+                PowerAction.Restart => "🔄 Restart Mode",
+                PowerAction.ForceShutdown => "⚡ Force Shutdown",
+                PowerAction.ForceRestart => "⚡ Force Restart",
+                _ => "🌙 Sleep Mode"
+            };
+        }
+
+        // Set Colors
         switch (action)
         {
             case PowerAction.Sleep:
-                ActionBadgeText.Text = "🌙 SLEEP";
-                ActionBadgeText.Foreground = (Brush)FindResource("AccentBrush");
-                ActionBadge.Background = (Brush)FindResource("ButtonBackgroundBrush");
-                ActionBadge.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 56, 189, 248));
+                ActionLabelText.Foreground = (Brush)FindResource("AccentBrush");
                 ProgressTrackRing.Stroke = (Brush)FindResource("AccentBrush");
                 break;
 
             case PowerAction.Shutdown:
             case PowerAction.ForceShutdown:
-                ActionBadgeText.Text = action == PowerAction.ForceShutdown ? "⚡ FORCE SHUTDOWN" : "🛑 SHUTDOWN";
-                ActionBadgeText.Foreground = (Brush)FindResource("UrgencyBrush");
-                ActionBadge.Background = new SolidColorBrush(Color.FromArgb(50, 239, 68, 68));
-                ActionBadge.BorderBrush = (Brush)FindResource("UrgencyBrush");
+                ActionLabelText.Foreground = (Brush)FindResource("UrgencyBrush");
                 ProgressTrackRing.Stroke = (Brush)FindResource("UrgencyBrush");
                 break;
 
             case PowerAction.Restart:
             case PowerAction.ForceRestart:
-                ActionBadgeText.Text = action == PowerAction.ForceRestart ? "⚡ FORCE RESTART" : "🔄 RESTART";
                 var amberBrush = new SolidColorBrush(Color.FromRgb(245, 158, 11));
-                ActionBadgeText.Foreground = amberBrush;
-                ActionBadge.Background = new SolidColorBrush(Color.FromArgb(50, 245, 158, 11));
-                ActionBadge.BorderBrush = amberBrush;
+                ActionLabelText.Foreground = amberBrush;
                 ProgressTrackRing.Stroke = amberBrush;
                 break;
 
             case PowerAction.Hibernate:
-                ActionBadgeText.Text = "❄️ HIBERNATE";
                 var iceBrush = new SolidColorBrush(Color.FromRgb(147, 197, 253));
-                ActionBadgeText.Foreground = iceBrush;
-                ActionBadge.Background = (Brush)FindResource("ButtonBackgroundBrush");
-                ActionBadge.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 147, 197, 253));
+                ActionLabelText.Foreground = iceBrush;
                 ProgressTrackRing.Stroke = iceBrush;
                 break;
         }
@@ -171,13 +202,11 @@ public partial class CountdownDisplay : UserControl
         if (urgent)
         {
             TimeText.Foreground = (Brush)FindResource("UrgencyBrush");
-            InPrefixText.Foreground = (Brush)FindResource("UrgencyBrush");
             _urgencyPulseStoryboard?.Begin(this, true);
         }
         else
         {
             TimeText.Foreground = (Brush)FindResource("TextPrimaryBrush");
-            InPrefixText.Foreground = (Brush)FindResource("TextSecondaryBrush");
             _urgencyPulseStoryboard?.Stop(this);
             GlowCircle.Opacity = 0;
         }

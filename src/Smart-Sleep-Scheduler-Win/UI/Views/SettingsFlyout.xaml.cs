@@ -45,6 +45,7 @@ public partial class SettingsFlyout : UserControl
 
         // Always on top
         AlwaysOnTopCheck.IsChecked = s.AlwaysOnTop;
+        SoundEnabledCheck.IsChecked = s.SoundEnabled;
 
         // Theme
         ThemeCombo.SelectedIndex = (int)s.Theme;
@@ -129,6 +130,7 @@ public partial class SettingsFlyout : UserControl
         }
 
         s.AlwaysOnTop = AlwaysOnTopCheck.IsChecked ?? true;
+        s.SoundEnabled = SoundEnabledCheck.IsChecked ?? false;
         s.Theme = (AppTheme)ThemeCombo.SelectedIndex;
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
         s.WakeUpTitle = string.IsNullOrWhiteSpace(WakeUpTitleInput.Text) ? AppConfig.Instance.Defaults.WakeUpTitle : WakeUpTitleInput.Text;
@@ -146,6 +148,7 @@ public partial class SettingsFlyout : UserControl
 
         s.Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         s.AlwaysOnTop = defaults.AlwaysOnTop;
+        s.SoundEnabled = defaults.SoundEnabled;
         s.DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
         s.AutoStartOnLaunch = defaults.AutoStartOnLaunch;
         s.AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
