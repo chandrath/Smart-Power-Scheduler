@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Microsoft.Win32;
 using SmartSleepScheduler.Config;
 using SmartSleepScheduler.Core;
 using SmartSleepScheduler.Core.Services;
@@ -12,6 +13,7 @@ public partial class MainWindow : Window
     private readonly TimerService _timerService = new();
     private bool _isFullscreen;
     private Rect _restoreBounds;
+    private bool _sleepTriggeredByApp;
 
     public MainWindow()
     {
@@ -23,6 +25,11 @@ public partial class MainWindow : Window
 
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
+
+        WakeUpControl.StartRequested += OnWakeUpStartRequested;
+        WakeUpControl.ExitRequested += () => Close();
+
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -50,8 +57,33 @@ public partial class MainWindow : Window
         }
         else
         {
-            UpdateDisplay(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+            OnTimerStateChanged(TimerState.Stopped);
         }
+    }
+
+    private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume)
+        {
+            Dispatcher.Invoke(ShowWakeUpView);
+        }
+    }
+
+    private void ShowWakeUpView()
+    {
+        _sleepTriggeredByApp = false;
+        int initialMins = App.Settings.AutoStartDurationSeconds > 0
+            ? Math.Max(1, App.Settings.AutoStartDurationSeconds / 60)
+            : 1;
+
+        WakeUpControl.Initialize(App.Settings.WakeUpTitle, App.Settings.WakeUpMessage, initialMins);
+        WakeUpOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void OnWakeUpStartRequested(TimeSpan duration)
+    {
+        WakeUpOverlay.Visibility = Visibility.Collapsed;
+        _timerService.Start(duration);
     }
 
     private void OnTimerTick(TimeSpan remaining, double progressFraction)
@@ -61,22 +93,49 @@ public partial class MainWindow : Window
 
     private void OnTimerStateChanged(TimerState state)
     {
-        PauseResumeButton.Content = state switch
+        if (state == TimerState.Running)
         {
-            TimerState.Running => "Pause",
-            TimerState.Paused => "Resume",
-            _ => "Start"
-        };
-        UpdateDisplay(_timerService.RemainingTime);
+            PauseResumeButton.Content = "Pause";
+            PauseResumeButton.IsEnabled = true;
+            PrimaryActionButton.Content = "STOP (Esc)";
+            PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
+            PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
+            UpdateDisplay(_timerService.RemainingTime);
+        }
+        else if (state == TimerState.Paused)
+        {
+            PauseResumeButton.Content = "Resume";
+            PauseResumeButton.IsEnabled = true;
+            PrimaryActionButton.Content = "STOP (Esc)";
+            PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
+            PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
+            UpdateDisplay(_timerService.RemainingTime);
+        }
+        else
+        {
+            PauseResumeButton.Content = "Pause";
+            PauseResumeButton.IsEnabled = false;
+            PrimaryActionButton.Content = "START";
+            PrimaryActionButton.Style = (Style)FindResource("AccentButtonStyle");
+            PrimaryActionButton.ToolTip = "Start Countdown";
+            UpdateDisplay(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+        }
     }
 
     private void OnTimerCompleted()
     {
         var action = App.Settings.SelectedPowerAction;
+        _sleepTriggeredByApp = (action == PowerAction.Sleep);
+
         bool ok = PowerService.ExecuteAction(action, out string error);
         if (!ok && !string.IsNullOrWhiteSpace(error))
         {
             MessageBox.Show($"Failed to execute {action}: {error}", "Smart Sleep Scheduler", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        else if (action == PowerAction.Sleep)
+        {
+            // Transition directly into WakeUpView when sleep finishes or on return
+            ShowWakeUpView();
         }
     }
 
@@ -89,7 +148,9 @@ public partial class MainWindow : Window
     {
         Topmost = App.Settings.AlwaysOnTop;
         UpdatePinVisual();
-        UpdateDisplay(_timerService.RemainingTime);
+        UpdateDisplay(_timerService.State == TimerState.Stopped
+            ? TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds)
+            : _timerService.RemainingTime);
     }
 
     private void PinButton_Click(object sender, RoutedEventArgs e)
@@ -144,9 +205,16 @@ public partial class MainWindow : Window
         SettingsOverlay.Visibility = Visibility.Visible;
     }
 
-    private void StopButton_Click(object sender, RoutedEventArgs e)
+    private void PrimaryActionButton_Click(object sender, RoutedEventArgs e)
     {
-        _timerService.Stop();
+        if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+        {
+            _timerService.Stop();
+        }
+        else
+        {
+            _timerService.Start(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+        }
     }
 
     private void PauseResumeButton_Click(object sender, RoutedEventArgs e)
@@ -158,10 +226,6 @@ public partial class MainWindow : Window
         else if (_timerService.State == TimerState.Paused)
         {
             _timerService.Resume();
-        }
-        else
-        {
-            _timerService.Start(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
         }
     }
 
@@ -189,6 +253,13 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.Escape)
         {
+            if (WakeUpOverlay.Visibility == Visibility.Visible)
+            {
+                WakeUpOverlay.Visibility = Visibility.Collapsed;
+                e.Handled = true;
+                return;
+            }
+
             if (SettingsOverlay.Visibility == Visibility.Visible)
             {
                 SettingsOverlay.Visibility = Visibility.Collapsed;
@@ -203,16 +274,18 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // ESC shortcut stops timer
-            _timerService.Stop();
-            e.Handled = true;
+            if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+            {
+                _timerService.Stop();
+                e.Handled = true;
+            }
         }
         else if (e.Key == Key.F11)
         {
             ToggleFullscreen();
             e.Handled = true;
         }
-        else if (e.Key == Key.Space && SettingsOverlay.Visibility != Visibility.Visible)
+        else if (e.Key == Key.Space && SettingsOverlay.Visibility != Visibility.Visible && WakeUpOverlay.Visibility != Visibility.Visible)
         {
             PauseResumeButton_Click(this, new RoutedEventArgs());
             e.Handled = true;

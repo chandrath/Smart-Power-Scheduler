@@ -24,6 +24,8 @@ public sealed class UserSettings
     public int AutoStartDurationSeconds { get; set; }
     public PowerAction SelectedPowerAction { get; set; }
     public bool AllowForceActions { get; set; }
+    public string WakeUpTitle { get; set; }
+    public string WakeUpMessage { get; set; }
 
     public UserSettings()
     {
@@ -35,6 +37,8 @@ public sealed class UserSettings
         AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
         SelectedPowerAction = Enum.TryParse<PowerAction>(defaults.DefaultPowerAction, true, out var a) ? a : PowerAction.Sleep;
         AllowForceActions = defaults.AllowForceActions;
+        WakeUpTitle = defaults.WakeUpTitle;
+        WakeUpMessage = defaults.WakeUpMessage;
     }
 
     public static UserSettings Load()

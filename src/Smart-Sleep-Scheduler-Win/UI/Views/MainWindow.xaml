@@ -151,14 +151,14 @@
                                 Style="{StaticResource FluentButtonStyle}"
                                 Click="PauseResumeButton_Click" />
 
-                        <!-- STOP Button (Esc) -->
-                        <Button x:Name="StopButton"
+                        <!-- Primary Dynamic Action Button (Start / Stop) -->
+                        <Button x:Name="PrimaryActionButton"
                                 Grid.Column="2"
                                 Content="STOP (Esc)"
                                 Style="{StaticResource DangerButtonStyle}"
                                 FontSize="14"
                                 FontWeight="Bold"
-                                Click="StopButton_Click"
+                                Click="PrimaryActionButton_Click"
                                 ToolTip="Stop Countdown (Shortcut: Esc)" />
 
                         <!-- Reset Button -->
@@ -170,6 +170,15 @@
                                 ToolTip="Reset to default duration" />
                     </Grid>
                 </Border>
+            </Grid>
+
+            <!-- Wake Up / Welcome Back Overlay -->
+            <Grid x:Name="WakeUpOverlay"
+                  Background="#99000000"
+                  Visibility="Collapsed">
+                <views:WakeUpView x:Name="WakeUpControl"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
             </Grid>
 
             <!-- Slide-in / Modal Settings Overlay -->

@@ -24,7 +24,9 @@
     "AllowForceActions": false,
     "MinTimerSeconds": 1,
     "MaxTimerSeconds": 43200,
-    "UrgencyWarningThresholdSeconds": 30
+    "UrgencyWarningThresholdSeconds": 30,
+    "WakeUpTitle": "Welcome Back, Sleepyhead! 😴",
+    "WakeUpMessage": "Your PC just enjoyed a refreshing power nap."
   }
 }
 

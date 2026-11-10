@@ -19,6 +19,7 @@ if errorlevel 1 (
 )
 
 echo Building and starting Smart Sleep Scheduler...
+taskkill /F /IM SmartSleepScheduler.exe >nul 2>&1
 dotnet run --project "%~dp0src\Smart-Sleep-Scheduler-Win\SmartSleepScheduler.csproj"
 
 if errorlevel 1 (

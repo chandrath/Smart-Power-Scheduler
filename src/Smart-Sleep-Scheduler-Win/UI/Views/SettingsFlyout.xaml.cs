@@ -51,6 +51,10 @@ public partial class SettingsFlyout : UserControl
 
         // Power Action
         PowerActionCombo.SelectedIndex = (int)s.SelectedPowerAction;
+
+        // Wake-Up Greeting
+        WakeUpTitleInput.Text = s.WakeUpTitle;
+        WakeUpMessageInput.Text = s.WakeUpMessage;
     }
 
     private static void DecomposeSeconds(int totalSeconds, out int value, out int unitIndex)
@@ -127,6 +131,8 @@ public partial class SettingsFlyout : UserControl
         s.AlwaysOnTop = AlwaysOnTopCheck.IsChecked ?? true;
         s.Theme = (AppTheme)ThemeCombo.SelectedIndex;
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
+        s.WakeUpTitle = string.IsNullOrWhiteSpace(WakeUpTitleInput.Text) ? AppConfig.Instance.Defaults.WakeUpTitle : WakeUpTitleInput.Text;
+        s.WakeUpMessage = string.IsNullOrWhiteSpace(WakeUpMessageInput.Text) ? AppConfig.Instance.Defaults.WakeUpMessage : WakeUpMessageInput.Text;
 
         s.Save();
         SettingsChanged?.Invoke();
@@ -145,6 +151,8 @@ public partial class SettingsFlyout : UserControl
         s.AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
         s.SelectedPowerAction = Enum.TryParse<PowerAction>(defaults.DefaultPowerAction, true, out var a) ? a : PowerAction.Sleep;
         s.AllowForceActions = defaults.AllowForceActions;
+        s.WakeUpTitle = defaults.WakeUpTitle;
+        s.WakeUpMessage = defaults.WakeUpMessage;
 
         s.Save();
         LoadValues();

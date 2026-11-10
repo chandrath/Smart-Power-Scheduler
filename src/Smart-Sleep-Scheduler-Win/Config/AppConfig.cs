@@ -78,5 +78,7 @@ public sealed class AppDefaults
     public int MinTimerSeconds { get; set; } = 1;
     public int MaxTimerSeconds { get; set; } = 43200;
     public int UrgencyWarningThresholdSeconds { get; set; } = 30;
+    public string WakeUpTitle { get; set; } = "Welcome Back, Sleepyhead! 😴";
+    public string WakeUpMessage { get; set; } = "Your PC just enjoyed a refreshing power nap.";
 }
 
