@@ -13,15 +13,19 @@ public partial class MainWindow : Window
     private readonly TimerService _timerService = new();
     private bool _isFullscreen;
     private Rect _restoreBounds;
-    private bool _sleepTriggeredByApp;
+    private TimeSpan _readyDuration;
 
     public MainWindow()
     {
         InitializeComponent();
 
+        _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+
         _timerService.Tick += OnTimerTick;
         _timerService.Completed += OnTimerCompleted;
         _timerService.StateChanged += OnTimerStateChanged;
+
+        CountdownControl.CustomDurationSet += OnCustomDurationSet;
 
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
@@ -53,10 +57,12 @@ public partial class MainWindow : Window
             int launchSeconds = App.Settings.AutoStartDurationSeconds > 0
                 ? App.Settings.AutoStartDurationSeconds
                 : 60;
-            _timerService.Start(TimeSpan.FromSeconds(launchSeconds));
+            _readyDuration = TimeSpan.FromSeconds(launchSeconds);
+            _timerService.Start(_readyDuration);
         }
         else
         {
+            _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
             OnTimerStateChanged(TimerState.Stopped);
         }
     }
@@ -71,7 +77,6 @@ public partial class MainWindow : Window
 
     private void ShowWakeUpView()
     {
-        _sleepTriggeredByApp = false;
         int initialMins = App.Settings.AutoStartDurationSeconds > 0
             ? Math.Max(1, App.Settings.AutoStartDurationSeconds / 60)
             : 1;
@@ -83,6 +88,7 @@ public partial class MainWindow : Window
     private void OnWakeUpStartRequested(TimeSpan duration)
     {
         WakeUpOverlay.Visibility = Visibility.Collapsed;
+        _readyDuration = duration;
         _timerService.Start(duration);
     }
 
@@ -115,18 +121,35 @@ public partial class MainWindow : Window
         {
             PauseResumeButton.Content = "Pause";
             PauseResumeButton.IsEnabled = false;
-            PrimaryActionButton.Content = "START";
-            PrimaryActionButton.Style = (Style)FindResource("AccentButtonStyle");
+            PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
-            UpdateDisplay(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+            UpdateStartButtonContent();
+            UpdateDisplay(_readyDuration);
         }
+    }
+
+    private void UpdateStartButtonContent()
+    {
+        string label = FormatShortDuration(_readyDuration);
+        PrimaryActionButton.Content = $"START ({label})";
+    }
+
+    private static string FormatShortDuration(TimeSpan ts)
+    {
+        if (ts.TotalHours >= 1)
+        {
+            return ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h";
+        }
+        if (ts.TotalMinutes >= 1)
+        {
+            return ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m";
+        }
+        return $"{Math.Max(1, (int)ts.TotalSeconds)}s";
     }
 
     private void OnTimerCompleted()
     {
         var action = App.Settings.SelectedPowerAction;
-        _sleepTriggeredByApp = (action == PowerAction.Sleep);
-
         bool ok = PowerService.ExecuteAction(action, out string error);
         if (!ok && !string.IsNullOrWhiteSpace(error))
         {
@@ -134,7 +157,6 @@ public partial class MainWindow : Window
         }
         else if (action == PowerAction.Sleep)
         {
-            // Transition directly into WakeUpView when sleep finishes or on return
             ShowWakeUpView();
         }
     }
@@ -144,13 +166,34 @@ public partial class MainWindow : Window
         CountdownControl.UpdateTime(remaining, App.Settings.SelectedPowerAction, _timerService.State);
     }
 
+    private void OnCustomDurationSet(TimeSpan newDuration)
+    {
+        _readyDuration = newDuration;
+        if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+        {
+            _timerService.Start(newDuration);
+        }
+        else
+        {
+            UpdateDisplay(_readyDuration);
+            UpdateStartButtonContent();
+        }
+    }
+
     private void OnSettingsChanged()
     {
         Topmost = App.Settings.AlwaysOnTop;
         UpdatePinVisual();
-        UpdateDisplay(_timerService.State == TimerState.Stopped
-            ? TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds)
-            : _timerService.RemainingTime);
+        if (_timerService.State == TimerState.Stopped)
+        {
+            _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+            UpdateStartButtonContent();
+            UpdateDisplay(_readyDuration);
+        }
+        else
+        {
+            UpdateDisplay(_timerService.RemainingTime);
+        }
     }
 
     private void PinButton_Click(object sender, RoutedEventArgs e)
@@ -213,7 +256,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _timerService.Start(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+            _timerService.Start(_readyDuration);
         }
     }
 
@@ -231,16 +274,22 @@ public partial class MainWindow : Window
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
-        _timerService.Start(TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds));
+        _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+        _timerService.Start(_readyDuration);
     }
 
-    private void QuickAdd_Click(object sender, RoutedEventArgs e)
+    private void QuickAdjust_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string tagStr && int.TryParse(tagStr, out int seconds))
         {
             if (_timerService.State == TimerState.Stopped)
             {
-                _timerService.Start(TimeSpan.FromSeconds(seconds));
+                var adjusted = _readyDuration.Add(TimeSpan.FromSeconds(seconds));
+                _readyDuration = adjusted >= TimeSpan.FromSeconds(10)
+                    ? adjusted
+                    : TimeSpan.FromSeconds(10);
+                UpdateDisplay(_readyDuration);
+                UpdateStartButtonContent();
             }
             else
             {

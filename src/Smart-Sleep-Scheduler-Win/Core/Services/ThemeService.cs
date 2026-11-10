@@ -86,6 +86,8 @@ public sealed class ThemeService
             dict["ButtonHoverBrush"] = new SolidColorBrush(Color.FromArgb(200, 71, 85, 105));
             dict["AccentBrush"] = new SolidColorBrush(Color.FromRgb(56, 189, 248)); // Vibrant cyan
             dict["UrgencyBrush"] = new SolidColorBrush(Color.FromRgb(239, 68, 68)); // Pulse red
+            dict["StartBrush"] = new SolidColorBrush(Color.FromRgb(16, 185, 129)); // Emerald Green
+            dict["StartHoverBrush"] = new SolidColorBrush(Color.FromRgb(5, 150, 105));
         }
         else
         {
@@ -99,6 +101,8 @@ public sealed class ThemeService
             dict["ButtonHoverBrush"] = new SolidColorBrush(Color.FromArgb(220, 226, 232, 240));
             dict["AccentBrush"] = new SolidColorBrush(Color.FromRgb(2, 132, 199)); // Sky blue
             dict["UrgencyBrush"] = new SolidColorBrush(Color.FromRgb(220, 38, 38)); // Deep red
+            dict["StartBrush"] = new SolidColorBrush(Color.FromRgb(5, 150, 105)); // Deep Emerald Green
+            dict["StartHoverBrush"] = new SolidColorBrush(Color.FromRgb(4, 120, 87));
         }
     }
 }

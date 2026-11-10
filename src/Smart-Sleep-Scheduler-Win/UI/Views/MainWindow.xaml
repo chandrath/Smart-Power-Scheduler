@@ -4,8 +4,8 @@
         xmlns:controls="clr-namespace:SmartSleepScheduler.UI.Controls"
         xmlns:views="clr-namespace:SmartSleepScheduler.UI.Views"
         Title="Smart Sleep Scheduler"
-        Width="420" Height="520"
-        MinWidth="360" MinHeight="440"
+        Width="430" Height="530"
+        MinWidth="370" MinHeight="460"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -23,11 +23,11 @@
                 <Grid.RowDefinitions>
                     <!-- Custom Title Bar -->
                     <RowDefinition Height="48" />
-                    <!-- Countdown Display Area -->
+                    <!-- Countdown Display Area (Scales in Viewbox) -->
                     <RowDefinition Height="*" />
-                    <!-- Quick Increment Preset Buttons -->
+                    <!-- Stepper Adjustment Chips (Add & Subtract) -->
                     <RowDefinition Height="Auto" />
-                    <!-- Primary Action Buttons (Stop, Pause, Reset) -->
+                    <!-- Primary Control Bar (Proportional & Centered) -->
                     <RowDefinition Height="84" />
                 </Grid.RowDefinitions>
 
@@ -96,46 +96,58 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Center: Countdown Ring Display -->
-                <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <controls:CountdownDisplay x:Name="CountdownControl" />
+                <!-- Center: Countdown Ring Display (Scales Responsively in Viewbox) -->
+                <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="16,4,16,10">
+                    <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <controls:CountdownDisplay x:Name="CountdownControl" />
+                    </Viewbox>
                 </Grid>
 
-                <!-- Preset Quick Add Chips -->
-                <StackPanel Grid.Row="2"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Center"
-                            Margin="0,0,0,16">
-                    <Button Content="+1m"
-                            Style="{StaticResource FluentButtonStyle}"
-                            Margin="4,0" Padding="12,6"
-                            Click="QuickAdd_Click" Tag="60"
-                            ToolTip="Add 1 minute" />
-                    <Button Content="+5m"
-                            Style="{StaticResource FluentButtonStyle}"
-                            Margin="4,0" Padding="12,6"
-                            Click="QuickAdd_Click" Tag="300"
-                            ToolTip="Add 5 minutes" />
-                    <Button Content="+15m"
-                            Style="{StaticResource FluentButtonStyle}"
-                            Margin="4,0" Padding="12,6"
-                            Click="QuickAdd_Click" Tag="900"
-                            ToolTip="Add 15 minutes" />
-                    <Button Content="+30m"
-                            Style="{StaticResource FluentButtonStyle}"
-                            Margin="4,0" Padding="12,6"
-                            Click="QuickAdd_Click" Tag="1800"
-                            ToolTip="Add 30 minutes" />
-                </StackPanel>
+                <!-- Stepper Chips Row: [ -1m ] [ -2m ] | [ +1m ] [ +5m ] [ +15m ] (MaxWidth=520) -->
+                <Grid Grid.Row="2" HorizontalAlignment="Center" MaxWidth="520" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- Minus Chips -->
+                        <Button Content="-1m"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="10,6"
+                                Click="QuickAdjust_Click" Tag="-60"
+                                ToolTip="Subtract 1 minute" />
+                        <Button Content="-2m"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="10,6"
+                                Click="QuickAdjust_Click" Tag="-120"
+                                ToolTip="Subtract 2 minutes" />
 
-                <!-- Bottom Primary Controls (Stop, Pause/Resume, Reset) -->
+                        <!-- Subtle Divider -->
+                        <Border Width="1" Height="18" Background="{DynamicResource CardBorderBrush}" Margin="6,0" VerticalAlignment="Center" />
+
+                        <!-- Plus Chips -->
+                        <Button Content="+1m"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="10,6"
+                                Click="QuickAdjust_Click" Tag="60"
+                                ToolTip="Add 1 minute" />
+                        <Button Content="+5m"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="10,6"
+                                Click="QuickAdjust_Click" Tag="300"
+                                ToolTip="Add 5 minutes" />
+                        <Button Content="+15m"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="10,6"
+                                Click="QuickAdjust_Click" Tag="900"
+                                ToolTip="Add 15 minutes" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Bottom Control Bar (Clustered & Cohesive in Fullscreen) -->
                 <Border Grid.Row="3"
                         Background="{DynamicResource CardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
                         BorderThickness="0,1,0,0"
                         CornerRadius="0,0,12,12"
                         Padding="16,14">
-                    <Grid>
+                    <Grid MaxWidth="520" HorizontalAlignment="Center" Width="380">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="12" />
@@ -154,12 +166,12 @@
                         <!-- Primary Dynamic Action Button (Start / Stop) -->
                         <Button x:Name="PrimaryActionButton"
                                 Grid.Column="2"
-                                Content="STOP (Esc)"
-                                Style="{StaticResource DangerButtonStyle}"
+                                Content="START (1m)"
+                                Style="{StaticResource StartButtonStyle}"
                                 FontSize="14"
                                 FontWeight="Bold"
                                 Click="PrimaryActionButton_Click"
-                                ToolTip="Stop Countdown (Shortcut: Esc)" />
+                                ToolTip="Start or Stop Countdown" />
 
                         <!-- Reset Button -->
                         <Button x:Name="ResetButton"
@@ -183,7 +195,7 @@
 
             <!-- Slide-in / Modal Settings Overlay -->
             <Grid x:Name="SettingsOverlay"
-                  Background="#66000000"
+                  Background="#99000000"
                   Visibility="Collapsed">
                 <views:SettingsFlyout x:Name="SettingsPanel"
                                       Width="390"
@@ -194,4 +206,3 @@
         </Grid>
     </Border>
 </Window>
-
