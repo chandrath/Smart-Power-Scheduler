@@ -4,6 +4,8 @@
     <!-- Fallback default brushes before ThemeService initializes -->
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#EE0B0F19" />
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#B41E293B" />
+    <SolidColorBrush x:Key="SolidPanelBackgroundBrush" Color="#FF0F172A" />
+    <SolidColorBrush x:Key="SolidCardBackgroundBrush" Color="#FF1E293B" />
     <SolidColorBrush x:Key="CardBorderBrush" Color="#5A334155" />
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F8FAFC" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#94A3B8" />
@@ -301,7 +303,7 @@
                                     Padding="4"
                                     Margin="0,4,0,0">
                                 <ScrollViewer CanContentScroll="True">
-                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Circular" />
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
                                 </ScrollViewer>
                             </Border>
                         </Popup>

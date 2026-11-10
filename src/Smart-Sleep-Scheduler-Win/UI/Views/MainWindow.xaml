@@ -111,14 +111,14 @@
                     </Viewbox>
                 </Grid>
 
-                <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] -->
+                <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] [ ↺ ] -->
                 <Grid Grid.Row="2" HorizontalAlignment="Center" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <!-- -1m Button (Grayed out & disabled when at 1 min) -->
                         <Button x:Name="MinusOneButton"
                                 Content="-1m"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="4,0" Padding="14,7"
+                                Margin="3,0" Padding="14,7"
                                 Click="MinusOneButton_Click"
                                 ToolTip="Subtract 1 minute" />
 
@@ -126,23 +126,33 @@
                         <Button x:Name="PlusOneButton"
                                 Content="+1m"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="4,0" Padding="14,7"
+                                Margin="3,0" Padding="14,7"
                                 Click="PlusOneButton_Click"
                                 ToolTip="Add 1 minute" />
 
                         <!-- Pencil Button to Type Custom Duration -->
                         <Button x:Name="PencilButton"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="4,0" Padding="0"
+                                Margin="3,0" Padding="0"
                                 Width="40" Height="34"
                                 Click="PencilButton_Click"
                                 ToolTip="Type custom duration">
                             <TextBlock Text="✏️" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Center" />
                         </Button>
+
+                        <!-- Reset Button to Default 1m -->
+                        <Button x:Name="ResetButton"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Margin="3,0" Padding="0"
+                                Width="40" Height="34"
+                                Click="ResetButton_Click"
+                                ToolTip="Reset to default 1m duration">
+                            <TextBlock Text="↺" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        </Button>
                     </StackPanel>
                 </Grid>
 
-                <!-- Bottom Control Bar: [ ↺ Reset ] [ START / STOP ] -->
+                <!-- Bottom Control Bar: Hero Full-Width [ START / STOP ] -->
                 <Border Grid.Row="3"
                         Background="{DynamicResource CardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
@@ -150,30 +160,11 @@
                         CornerRadius="0,0,12,12"
                         Padding="20,14">
                     <Grid MaxWidth="440" HorizontalAlignment="Center" Width="360">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Left: Small Round Reset Button -->
-                        <Button x:Name="ResetButton"
-                                Grid.Column="0"
-                                Width="44" Height="44"
-                                Style="{StaticResource FluentButtonStyle}"
-                                Padding="0"
-                                Click="ResetButton_Click"
-                                ToolTip="Reset to default duration">
-                            <TextBlock Text="↺" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Button>
-
-                        <!-- Primary Big Action Button (Emerald Start / Red Stop) -->
                         <Button x:Name="PrimaryActionButton"
-                                Grid.Column="1"
-                                Margin="12,0,0,0"
-                                Height="46"
+                                Height="48"
                                 Content="START (1m)"
                                 Style="{StaticResource StartButtonStyle}"
-                                FontSize="15"
+                                FontSize="16"
                                 FontWeight="Bold"
                                 Click="PrimaryActionButton_Click"
                                 ToolTip="Start or Stop Countdown" />
@@ -192,7 +183,7 @@
 
             <!-- Slide-in / Modal Settings Overlay -->
             <Grid x:Name="SettingsOverlay"
-                  Background="#99000000"
+                  Background="#E6000000"
                   Visibility="Collapsed">
                 <views:SettingsFlyout x:Name="SettingsPanel"
                                       Width="390"

@@ -71,7 +71,10 @@ public sealed class AppDefaults
     public string Theme { get; set; } = "Dark";
     public bool AlwaysOnTop { get; set; } = true;
     public bool SoundEnabled { get; set; } = false;
-    public int DefaultTimerDurationSeconds { get; set; } = 180;
+    public int SoundVolume { get; set; } = 80;
+    public string SoundScheme { get; set; } = "Modern";
+    public int TickTriggerSeconds { get; set; } = 60;
+    public int DefaultTimerDurationSeconds { get; set; } = 60;
     public bool AutoStartOnLaunch { get; set; } = true;
     public int AutoStartDurationSeconds { get; set; } = 60;
     public string DefaultPowerAction { get; set; } = "Sleep";

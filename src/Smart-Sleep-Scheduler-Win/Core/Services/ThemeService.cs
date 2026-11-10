@@ -78,6 +78,8 @@ public sealed class ThemeService
         {
             dict["WindowBackgroundBrush"] = new SolidColorBrush(Color.FromArgb(235, 15, 23, 42)); // Deep slate with opacity
             dict["CardBackgroundBrush"] = new SolidColorBrush(Color.FromArgb(180, 30, 41, 59));
+            dict["SolidPanelBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            dict["SolidCardBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(30, 41, 59));
             dict["CardBorderBrush"] = new SolidColorBrush(Color.FromArgb(90, 71, 85, 105));
             dict["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));
             dict["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(148, 163, 184));
@@ -93,6 +95,8 @@ public sealed class ThemeService
         {
             dict["WindowBackgroundBrush"] = new SolidColorBrush(Color.FromArgb(238, 248, 250, 252)); // Crisp light slate
             dict["CardBackgroundBrush"] = new SolidColorBrush(Color.FromArgb(210, 255, 255, 255));
+            dict["SolidPanelBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(248, 250, 252));
+            dict["SolidCardBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
             dict["CardBorderBrush"] = new SolidColorBrush(Color.FromArgb(120, 203, 213, 225));
             dict["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));
             dict["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(71, 85, 105));

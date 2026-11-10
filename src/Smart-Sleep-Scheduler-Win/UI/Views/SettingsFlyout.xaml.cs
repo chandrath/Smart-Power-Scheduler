@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -43,9 +44,26 @@ public partial class SettingsFlyout : UserControl
         AutoStartDurationInput.Text = autoVal.ToString();
         AutoStartDurationUnitCombo.SelectedIndex = autoUnitIdx;
 
-        // Always on top
+        // Always on top & Sound
         AlwaysOnTopCheck.IsChecked = s.AlwaysOnTop;
         SoundEnabledCheck.IsChecked = s.SoundEnabled;
+        SoundOptionsPanel.Visibility = s.SoundEnabled ? Visibility.Visible : Visibility.Collapsed;
+
+        int vol = s.SoundVolume > 0 ? s.SoundVolume : 80;
+        SoundVolumeSlider.Value = vol;
+        VolumeValueText.Text = $"{vol}%";
+        SoundSchemeCombo.SelectedIndex = s.SoundScheme switch
+        {
+            "Classic" => 1,
+            "Soft" => 2,
+            _ => 0
+        };
+        TickTimingCombo.SelectedIndex = s.TickTriggerSeconds switch
+        {
+            0 => 1,
+            10 => 2,
+            _ => 0
+        };
 
         // Theme
         ThemeCombo.SelectedIndex = (int)s.Theme;
@@ -109,6 +127,44 @@ public partial class SettingsFlyout : UserControl
         ThemeService.Instance.ApplyTheme(theme);
     }
 
+    private void SoundEnabledCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (SoundOptionsPanel == null) return;
+        SoundOptionsPanel.Visibility = (SoundEnabledCheck.IsChecked == true) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void SoundVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (VolumeValueText != null)
+        {
+            VolumeValueText.Text = $"{(int)SoundVolumeSlider.Value}%";
+        }
+    }
+
+    private void SoundSchemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Selection change handled on save or test
+    }
+
+    private void TestSoundButton_Click(object sender, RoutedEventArgs e)
+    {
+        var prevVol = App.Settings.SoundVolume;
+        var prevScheme = App.Settings.SoundScheme;
+
+        App.Settings.SoundVolume = (int)SoundVolumeSlider.Value;
+        App.Settings.SoundScheme = SoundSchemeCombo.SelectedIndex switch
+        {
+            1 => "Classic",
+            2 => "Soft",
+            _ => "Modern"
+        };
+
+        SoundService.PlayToggleTest();
+
+        App.Settings.SoundVolume = prevVol;
+        App.Settings.SoundScheme = prevScheme;
+    }
+
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         var s = App.Settings;
@@ -131,6 +187,19 @@ public partial class SettingsFlyout : UserControl
 
         s.AlwaysOnTop = AlwaysOnTopCheck.IsChecked ?? true;
         s.SoundEnabled = SoundEnabledCheck.IsChecked ?? false;
+        s.SoundVolume = (int)SoundVolumeSlider.Value;
+        s.SoundScheme = SoundSchemeCombo.SelectedIndex switch
+        {
+            1 => "Classic",
+            2 => "Soft",
+            _ => "Modern"
+        };
+        s.TickTriggerSeconds = TickTimingCombo.SelectedIndex switch
+        {
+            1 => 0,
+            2 => 10,
+            _ => 60
+        };
         s.Theme = (AppTheme)ThemeCombo.SelectedIndex;
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
         s.WakeUpTitle = string.IsNullOrWhiteSpace(WakeUpTitleInput.Text) ? AppConfig.Instance.Defaults.WakeUpTitle : WakeUpTitleInput.Text;
@@ -149,6 +218,9 @@ public partial class SettingsFlyout : UserControl
         s.Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         s.AlwaysOnTop = defaults.AlwaysOnTop;
         s.SoundEnabled = defaults.SoundEnabled;
+        s.SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 80;
+        s.SoundScheme = !string.IsNullOrWhiteSpace(defaults.SoundScheme) ? defaults.SoundScheme : "Modern";
+        s.TickTriggerSeconds = defaults.TickTriggerSeconds;
         s.DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
         s.AutoStartOnLaunch = defaults.AutoStartOnLaunch;
         s.AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
@@ -161,6 +233,26 @@ public partial class SettingsFlyout : UserControl
         LoadValues();
         ThemeService.Instance.ApplyTheme(s.Theme);
         SettingsChanged?.Invoke();
+    }
+
+    private void OpenSettingsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string dir = UserSettings.GetSettingsDirectory();
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir)
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to open folder: {ex.Message}", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

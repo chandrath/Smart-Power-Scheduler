@@ -98,8 +98,12 @@ public partial class CountdownDisplay : UserControl
             TimeText.ToolTip = "Click to type custom duration";
         }
 
-        // 4. Sound Tick in Final 5 Seconds
-        if (state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= 5)
+        // 4. Sound Tick Timing (Default: < 60s, or Entire, or < 10s)
+        int tickTrigger = App.Settings.TickTriggerSeconds;
+        bool shouldTick = state == TimerState.Running && remaining.TotalSeconds > 0 &&
+                          (tickTrigger <= 0 || remaining.TotalSeconds <= tickTrigger);
+
+        if (shouldTick)
         {
             int currentSecond = (int)Math.Ceiling(remaining.TotalSeconds);
             if (currentSecond != _lastSoundSecond)
@@ -291,6 +295,11 @@ public partial class CountdownDisplay : UserControl
         {
             CustomDurationSet?.Invoke(duration);
         }
+    }
+
+    public void CancelInlineEdit()
+    {
+        CancelTimeEdit();
     }
 
     private void CancelTimeEdit()

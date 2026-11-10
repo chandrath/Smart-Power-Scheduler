@@ -117,6 +117,13 @@ public partial class MainWindow : Window
             PlusOneButton.Opacity = 0.35;
             PencilButton.IsEnabled = false;
             PencilButton.Opacity = 0.35;
+            ResetButton.IsEnabled = false;
+            ResetButton.Opacity = 0.35;
+
+            // Lock Settings gear while countdown is running
+            GearButton.IsEnabled = false;
+            GearButton.Opacity = 0.35;
+            GearButton.ToolTip = "Settings locked during active countdown";
 
             UpdateDisplay(_timerService.RemainingTime);
         }
@@ -130,6 +137,13 @@ public partial class MainWindow : Window
             PlusOneButton.Opacity = 1.0;
             PencilButton.IsEnabled = true;
             PencilButton.Opacity = 1.0;
+            ResetButton.IsEnabled = true;
+            ResetButton.Opacity = 1.0;
+
+            // Unlock Settings gear
+            GearButton.IsEnabled = true;
+            GearButton.Opacity = 1.0;
+            GearButton.ToolTip = "Settings";
 
             UpdateStartButtonContent();
             UpdateDisplay(_readyDuration);
@@ -296,6 +310,7 @@ public partial class MainWindow : Window
 
     private void GearButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_timerService.State == TimerState.Running) return;
         SettingsPanel.LoadValues();
         SettingsOverlay.Visibility = Visibility.Visible;
     }
@@ -315,17 +330,13 @@ public partial class MainWindow : Window
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_timerService.State != TimerState.Stopped) return;
+
+        CountdownControl.CancelInlineEdit();
         _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
-        if (_timerService.State == TimerState.Running)
-        {
-            _timerService.Start(_readyDuration);
-        }
-        else
-        {
-            UpdateDisplay(_readyDuration);
-            UpdateStartButtonContent();
-            UpdateMinusButtonState(_readyDuration);
-        }
+        UpdateDisplay(_readyDuration);
+        UpdateStartButtonContent();
+        UpdateMinusButtonState(_readyDuration);
     }
 
     private void MinusOneButton_Click(object sender, RoutedEventArgs e)

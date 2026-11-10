@@ -21,6 +21,9 @@ public sealed class UserSettings
     public AppTheme Theme { get; set; }
     public bool AlwaysOnTop { get; set; }
     public bool SoundEnabled { get; set; }
+    public int SoundVolume { get; set; }
+    public string SoundScheme { get; set; }
+    public int TickTriggerSeconds { get; set; }
     public int DefaultTimerDurationSeconds { get; set; }
     public bool AutoStartOnLaunch { get; set; }
     public int AutoStartDurationSeconds { get; set; }
@@ -35,6 +38,9 @@ public sealed class UserSettings
         Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         AlwaysOnTop = defaults.AlwaysOnTop;
         SoundEnabled = defaults.SoundEnabled;
+        SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 80;
+        SoundScheme = !string.IsNullOrWhiteSpace(defaults.SoundScheme) ? defaults.SoundScheme : "Modern";
+        TickTriggerSeconds = defaults.TickTriggerSeconds;
         DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
         AutoStartOnLaunch = defaults.AutoStartOnLaunch;
         AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
@@ -44,6 +50,8 @@ public sealed class UserSettings
         WakeUpMessage = defaults.WakeUpMessage;
     }
 
+    public static string GetSettingsDirectory() => SettingsDirectory;
+
     public static UserSettings Load()
     {
         try
@@ -52,7 +60,15 @@ public sealed class UserSettings
             {
                 string json = File.ReadAllText(SettingsFilePath);
                 var settings = JsonSerializer.Deserialize<UserSettings>(json);
-                if (settings != null) return settings;
+                if (settings != null)
+                {
+                    if (settings.DefaultTimerDurationSeconds == 180)
+                    {
+                        settings.DefaultTimerDurationSeconds = 60;
+                        settings.Save();
+                    }
+                    return settings;
+                }
             }
         }
         catch
