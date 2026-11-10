@@ -31,6 +31,10 @@ public sealed class UserSettings
     public bool AllowForceActions { get; set; }
     public string WakeUpTitle { get; set; }
     public string WakeUpMessage { get; set; }
+    public bool PeriodicBlockerScanEnabled { get; set; }
+    public int PeriodicBlockerScanIntervalSeconds { get; set; }
+    public bool BlockerAlertSoundEnabled { get; set; }
+    public bool StartupBlockerAlertSoundEnabled { get; set; }
 
     public UserSettings()
     {
@@ -48,6 +52,10 @@ public sealed class UserSettings
         AllowForceActions = defaults.AllowForceActions;
         WakeUpTitle = defaults.WakeUpTitle;
         WakeUpMessage = defaults.WakeUpMessage;
+        PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
+        PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds > 0 ? defaults.PeriodicBlockerScanIntervalSeconds : 30;
+        BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
+        StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
     }
 
     public static string GetSettingsDirectory() => SettingsDirectory;
@@ -76,6 +84,11 @@ public sealed class UserSettings
                     if (settings.TickTriggerSeconds == 60)
                     {
                         settings.TickTriggerSeconds = 30;
+                        needSave = true;
+                    }
+                    if (settings.PeriodicBlockerScanIntervalSeconds <= 0)
+                    {
+                        settings.PeriodicBlockerScanIntervalSeconds = 30;
                         needSave = true;
                     }
                     if (needSave)

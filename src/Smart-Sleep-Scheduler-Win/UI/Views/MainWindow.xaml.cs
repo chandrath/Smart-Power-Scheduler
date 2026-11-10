@@ -28,16 +28,12 @@ public partial class MainWindow : Window
         _timerService.Tick += OnTimerTick;
         _timerService.Completed += OnTimerCompleted;
         _timerService.StateChanged += OnTimerStateChanged;
-
         CountdownControl.CustomDurationSet += OnCustomDurationSet;
         CountdownControl.DurationPreviewChanged += OnDurationPreviewChanged;
-
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
-
         WakeUpControl.StartRequested += OnWakeUpStartRequested;
         WakeUpControl.ExitRequested += () => Close();
-
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
 
@@ -51,6 +47,8 @@ public partial class MainWindow : Window
         Topmost = App.Settings.AlwaysOnTop;
         UpdatePinVisual();
         UpdateSoundVisual();
+
+        CheckForSleepBlockers(isStartup: true);
 
         if (App.Settings.AutoStartOnLaunch)
         {
@@ -72,10 +70,7 @@ public partial class MainWindow : Window
 
     private void ShowWakeUpView()
     {
-        int initialMins = App.Settings.AutoStartDurationSeconds > 0
-            ? Math.Max(1, App.Settings.AutoStartDurationSeconds / 60)
-            : 1;
-
+        int initialMins = Math.Max(1, App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds / 60 : 1);
         WakeUpControl.Initialize(App.Settings.WakeUpTitle, App.Settings.WakeUpMessage, initialMins);
         WakeUpOverlay.Visibility = Visibility.Visible;
     }
@@ -97,11 +92,17 @@ public partial class MainWindow : Window
             UpdateDisplay(remaining);
 
             int remainingSecs = (int)Math.Ceiling(remaining.TotalSeconds);
-            var milestones = AppConfig.Instance.Defaults.BlockerCheckMilestonesSeconds;
-            if (remainingSecs != _lastMilestoneChecked && Array.IndexOf(milestones, remainingSecs) >= 0)
+            if (remainingSecs != _lastMilestoneChecked)
             {
-                _lastMilestoneChecked = remainingSecs;
-                CheckForSleepBlockers();
+                bool shouldCheck = remainingSecs == 5 || (App.Settings.PeriodicBlockerScanEnabled
+                    ? (remainingSecs % Math.Max(10, App.Settings.PeriodicBlockerScanIntervalSeconds) == 0)
+                    : Array.IndexOf(AppConfig.Instance.Defaults.BlockerCheckMilestonesSeconds, remainingSecs) >= 0);
+
+                if (shouldCheck)
+                {
+                    _lastMilestoneChecked = remainingSecs;
+                    CheckForSleepBlockers();
+                }
             }
         }
     }
@@ -164,14 +165,8 @@ public partial class MainWindow : Window
 
     private static string FormatShortDuration(TimeSpan ts)
     {
-        if (ts.TotalHours >= 1)
-        {
-            return ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h";
-        }
-        if (ts.TotalMinutes >= 1)
-        {
-            return ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m";
-        }
+        if (ts.TotalHours >= 1) return ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h";
+        if (ts.TotalMinutes >= 1) return ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m";
         return $"{Math.Max(1, (int)ts.TotalSeconds)}s";
     }
 
@@ -179,21 +174,14 @@ public partial class MainWindow : Window
     {
         SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
-        bool ok = PowerService.ExecuteAction(action, out string error);
-        if (!ok && !string.IsNullOrWhiteSpace(error))
-        {
+        if (!PowerService.ExecuteAction(action, out string error) && !string.IsNullOrWhiteSpace(error))
             MessageBox.Show($"Failed to execute {action}: {error}", "Smart Sleep Scheduler", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
         else if (action == PowerAction.Sleep)
-        {
             ShowWakeUpView();
-        }
     }
 
-    private void UpdateDisplay(TimeSpan remaining)
-    {
+    private void UpdateDisplay(TimeSpan remaining) =>
         CountdownControl.UpdateTime(remaining, App.Settings.SelectedPowerAction, _timerService.State);
-    }
 
     private void OnCustomDurationSet(TimeSpan newDuration)
     {
@@ -314,6 +302,12 @@ public partial class MainWindow : Window
         }
         else
         {
+            if (!string.IsNullOrWhiteSpace(_currentBlockerName) && !_blockerWarningDismissed)
+            {
+                ShowBlockerDialog("⚠️ Blocker Detected Before Start");
+                return;
+            }
+
             CountdownControl.CommitIfEditing();
             _lastMilestoneChecked = -1;
             _blockerWarningDismissed = false;
@@ -322,69 +316,67 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CheckForSleepBlockers()
+    private void CheckForSleepBlockers(bool isStartup = false)
     {
         var action = App.Settings.SelectedPowerAction;
-        bool isForce = action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart;
-        if (isForce) return;
+        if (action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart) return;
 
         Task.Run(() =>
         {
             var (hasBlocker, blockerName) = SleepBlockerService.DetectActiveBlocker();
-            if (hasBlocker)
+            Dispatcher.Invoke(() =>
             {
-                Dispatcher.Invoke(() =>
+                if (hasBlocker)
                 {
                     _currentBlockerName = blockerName;
-                    string actName = PowerService.GetActionDisplayName(action);
                     BlockerWarningText.Text = $"Blocker: {blockerName}";
                     BlockerWarningPill.Visibility = Visibility.Visible;
 
-                    if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
+                    if (isStartup)
+                    {
+                        if (App.Settings.StartupBlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
+                    }
+                    else if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
                     {
                         _timerService.Pause();
-                        BlockerDialogTitle.Text = "⚠️ Timer Paused: Blocker Detected";
-                        BlockerDialogMessage.Text = $"Application '{blockerName}' is actively preventing scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
-                        CloseBlockerAndResumeButton.Content = $"🛑 Close {blockerName} & Resume";
-                        BlockerDialogOverlay.Visibility = Visibility.Visible;
+                        if (App.Settings.BlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
+                        ShowBlockerDialog("⚠️ Timer Paused: Blocker Detected");
                     }
-                });
-            }
-            else
-            {
-                Dispatcher.Invoke(() =>
+                }
+                else
                 {
                     _currentBlockerName = null;
                     _blockerWarningDismissed = false;
                     BlockerWarningPill.Visibility = Visibility.Collapsed;
                     BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-                });
-            }
+                }
+            });
         });
     }
 
-    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e)
+    private void ShowBlockerDialog(string title)
     {
         string actName = PowerService.GetActionDisplayName(App.Settings.SelectedPowerAction);
-        BlockerDialogTitle.Text = _timerService.State == TimerState.Paused
-            ? "⚠️ Timer Paused: Blocker Detected"
-            : "⚠️ Blocker Active";
-        BlockerDialogMessage.Text = $"Application '{_currentBlockerName ?? "Unknown"}' may prevent scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
-        CloseBlockerAndResumeButton.Content = $"🛑 Close {_currentBlockerName ?? "Blocker"} & Resume";
+        string blocker = _currentBlockerName ?? "Blocker";
+        BlockerDialogTitle.Text = title;
+        BlockerDialogMessage.Text = $"Application '{blocker}' is actively preventing scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
+        CloseBlockerAndResumeButton.Content = $"🛑 Close {blocker} & {(_timerService.State == TimerState.Stopped ? "Start" : "Resume")}";
         BlockerDialogOverlay.Visibility = Visibility.Visible;
     }
+
+    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e) =>
+        ShowBlockerDialog(_timerService.State == TimerState.Paused ? "⚠️ Timer Paused: Blocker Detected" : "⚠️ Blocker Active");
 
     private void CloseBlockerAndResumeButton_Click(object sender, RoutedEventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(_currentBlockerName))
-        {
             SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
-        }
         _currentBlockerName = null;
         _blockerWarningDismissed = true;
         BlockerDialogOverlay.Visibility = Visibility.Collapsed;
         BlockerWarningPill.Visibility = Visibility.Collapsed;
         if (_timerService.State == TimerState.Paused) _timerService.Resume();
+        else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
 
     private void DismissBlockerWarningButton_Click(object sender, RoutedEventArgs e)
@@ -393,6 +385,7 @@ public partial class MainWindow : Window
         _blockerWarningDismissed = true;
         BlockerWarningPill.Visibility = Visibility.Visible;
         if (_timerService.State == TimerState.Paused) _timerService.Resume();
+        else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
 
     private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e)

@@ -29,7 +29,12 @@ public static class SoundService
         PlaySchemeSound(ToneType.Completion);
     }
 
-    private enum ToneType { Tick, Toggle, Completion }
+    public static void PlayBlockerAlert()
+    {
+        PlaySchemeSound(ToneType.BlockerAlert);
+    }
+
+    private enum ToneType { Tick, Toggle, Completion, BlockerAlert }
 
     private static void PlaySchemeSound(ToneType type, int? volumeOverride = null, string? schemeOverride = null)
     {
@@ -72,6 +77,7 @@ public static class SoundService
         (_, ToneType.Tick) => new[] { (1174.0, 140) },
         (_, ToneType.Toggle) => new[] { (1046.5, 90), (1318.5, 130) },
         (_, ToneType.Completion) => new[] { (784.0, 90), (987.7, 90), (1174.6, 180) },
+        (_, ToneType.BlockerAlert) => new[] { (587.3, 110), (440.0, 90), (880.0, 180) },
         _ => new[] { (1174.0, 140) }
     };
 

@@ -126,6 +126,11 @@ public partial class SettingsFlyout : UserControl
         // Wake-Up Greeting
         WakeUpTitleInput.Text = s.WakeUpTitle;
         WakeUpMessageInput.Text = s.WakeUpMessage;
+
+        // Blocker Defense
+        StartupBlockerSoundCheck.IsChecked = s.StartupBlockerAlertSoundEnabled;
+        BlockerAlertSoundCheck.IsChecked = s.BlockerAlertSoundEnabled;
+        PeriodicBlockerScanCheck.IsChecked = s.PeriodicBlockerScanEnabled;
     }
 
     private static void DecomposeSeconds(int totalSeconds, out int value, out int unitIndex)
@@ -279,6 +284,9 @@ public partial class SettingsFlyout : UserControl
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
         s.WakeUpTitle = string.IsNullOrWhiteSpace(WakeUpTitleInput.Text) ? AppConfig.Instance.Defaults.WakeUpTitle : WakeUpTitleInput.Text;
         s.WakeUpMessage = string.IsNullOrWhiteSpace(WakeUpMessageInput.Text) ? AppConfig.Instance.Defaults.WakeUpMessage : WakeUpMessageInput.Text;
+        s.StartupBlockerAlertSoundEnabled = StartupBlockerSoundCheck.IsChecked ?? true;
+        s.BlockerAlertSoundEnabled = BlockerAlertSoundCheck.IsChecked ?? true;
+        s.PeriodicBlockerScanEnabled = PeriodicBlockerScanCheck.IsChecked ?? false;
 
         s.Save();
         SettingsChanged?.Invoke();
@@ -303,6 +311,9 @@ public partial class SettingsFlyout : UserControl
         s.AllowForceActions = defaults.AllowForceActions;
         s.WakeUpTitle = defaults.WakeUpTitle;
         s.WakeUpMessage = defaults.WakeUpMessage;
+        s.StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
+        s.BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
+        s.PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
 
         s.Save();
         LoadValues();

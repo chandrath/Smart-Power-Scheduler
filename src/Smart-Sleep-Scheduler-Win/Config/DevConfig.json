@@ -32,6 +32,10 @@
     "WakeUpTitle": "Welcome Back, Sleepyhead! 😴",
     "WakeUpMessage": "Your PC just enjoyed a refreshing power nap.",
     "BlockerCheckMilestonesSeconds": [900, 300, 60, 30],
+    "PeriodicBlockerScanEnabled": false,
+    "PeriodicBlockerScanIntervalSeconds": 30,
+    "BlockerAlertSoundEnabled": true,
+    "StartupBlockerAlertSoundEnabled": true,
     "KnownSleepBlockerProcesses": [
       "caffeine",
       "dontsleep",
