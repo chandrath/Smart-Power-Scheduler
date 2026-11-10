@@ -229,7 +229,7 @@
                                         Padding="{TemplateBinding Padding}"
                                         CornerRadius="4"
                                         Margin="2,1">
-                                    <ContentPresenter />
+                                    <ContentPresenter TextBlock.Foreground="{DynamicResource TextPrimaryBrush}" />
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
@@ -264,7 +264,8 @@
                                             CornerRadius="6"
                                             Padding="10,6">
                                         <Grid>
-                                            <ContentPresenter Content="{TemplateBinding Content}"
+                                            <ContentPresenter TextBlock.Foreground="{DynamicResource TextPrimaryBrush}"
+                                                              Content="{TemplateBinding Content}"
                                                               Margin="0,0,24,0"
                                                               VerticalAlignment="Center" />
                                             <TextBlock Text="▼"
@@ -282,7 +283,8 @@
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </ToggleButton.Template>
-                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                            <ContentPresenter TextBlock.Foreground="{DynamicResource TextPrimaryBrush}"
+                                              Content="{TemplateBinding SelectionBoxItem}"
                                               ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                               ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
                         </ToggleButton>

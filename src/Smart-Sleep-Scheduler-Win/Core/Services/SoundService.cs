@@ -25,9 +25,9 @@ public static class SoundService
         PlaySchemeSound(ToneType.Tick);
     }
 
-    public static void PlayToggleTest()
+    public static void PlayToggleTest(int? volumeOverride = null, string? schemeOverride = null)
     {
-        PlaySchemeSound(ToneType.Toggle);
+        PlaySchemeSound(ToneType.Toggle, volumeOverride, schemeOverride);
     }
 
     public static void PlayCompletion()
@@ -38,10 +38,14 @@ public static class SoundService
 
     private enum ToneType { Tick, Toggle, Completion }
 
-    private static void PlaySchemeSound(ToneType type)
+    private static void PlaySchemeSound(ToneType type, int? volumeOverride = null, string? schemeOverride = null)
     {
-        double volume = Math.Clamp(App.Settings.SoundVolume / 100.0, 0.05, 1.0);
-        string scheme = App.Settings.SoundScheme ?? "Modern";
+        double rawVolume = (volumeOverride ?? App.Settings.SoundVolume) / 100.0;
+        rawVolume = Math.Clamp(rawVolume, 0.05, 1.0);
+        // Perceptual acoustic loudness curve: quadratic response prevents harsh ear-blasting
+        double volume = Math.Pow(rawVolume, 2.2) * 0.55;
+
+        string scheme = schemeOverride ?? App.Settings.SoundScheme ?? "Modern";
 
         var tones = GetTonesForScheme(scheme, type);
         byte[] wav = GenerateWav(tones, volume);

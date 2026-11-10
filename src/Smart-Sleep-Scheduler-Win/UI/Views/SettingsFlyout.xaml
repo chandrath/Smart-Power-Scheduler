@@ -188,15 +188,22 @@
                                 <ComboBoxItem Content="Soft Tone" />
                             </ComboBox>
 
-                            <TextBlock Text="Tick Sound Timing"
+                            <TextBlock Text="Tick Sound Timing (Starts when time is under)"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        Margin="0,0,0,4" />
                             <ComboBox x:Name="TickTimingCombo"
                                       Margin="0,0,0,4">
-                                <ComboBoxItem Content="Under 60 seconds (Default)" IsSelected="True" />
+                                <ComboBoxItem Content="10 seconds" />
+                                <ComboBoxItem Content="15 seconds" />
+                                <ComboBoxItem Content="20 seconds" />
+                                <ComboBoxItem Content="25 seconds" />
+                                <ComboBoxItem Content="30 seconds (Default)" IsSelected="True" />
+                                <ComboBoxItem Content="45 seconds" />
+                                <ComboBoxItem Content="60 seconds (1 minute)" />
+                                <ComboBoxItem Content="2 minutes" />
+                                <ComboBoxItem Content="5 minutes" />
                                 <ComboBoxItem Content="Entire countdown" />
-                                <ComboBoxItem Content="Final 10 seconds only" />
                             </ComboBox>
                         </StackPanel>
 

@@ -38,7 +38,7 @@ public sealed class UserSettings
         Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         AlwaysOnTop = defaults.AlwaysOnTop;
         SoundEnabled = defaults.SoundEnabled;
-        SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 80;
+        SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 50;
         SoundScheme = !string.IsNullOrWhiteSpace(defaults.SoundScheme) ? defaults.SoundScheme : "Modern";
         TickTriggerSeconds = defaults.TickTriggerSeconds;
         DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
@@ -62,9 +62,24 @@ public sealed class UserSettings
                 var settings = JsonSerializer.Deserialize<UserSettings>(json);
                 if (settings != null)
                 {
+                    bool needSave = false;
                     if (settings.DefaultTimerDurationSeconds == 180)
                     {
                         settings.DefaultTimerDurationSeconds = 60;
+                        needSave = true;
+                    }
+                    if (settings.SoundVolume == 80)
+                    {
+                        settings.SoundVolume = 50;
+                        needSave = true;
+                    }
+                    if (settings.TickTriggerSeconds == 60)
+                    {
+                        settings.TickTriggerSeconds = 30;
+                        needSave = true;
+                    }
+                    if (needSave)
+                    {
                         settings.Save();
                     }
                     return settings;

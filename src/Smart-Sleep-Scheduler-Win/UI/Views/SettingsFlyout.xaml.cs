@@ -49,7 +49,7 @@ public partial class SettingsFlyout : UserControl
         SoundEnabledCheck.IsChecked = s.SoundEnabled;
         SoundOptionsPanel.Visibility = s.SoundEnabled ? Visibility.Visible : Visibility.Collapsed;
 
-        int vol = s.SoundVolume > 0 ? s.SoundVolume : 80;
+        int vol = s.SoundVolume > 0 ? s.SoundVolume : 50;
         SoundVolumeSlider.Value = vol;
         VolumeValueText.Text = $"{vol}%";
         SoundSchemeCombo.SelectedIndex = s.SoundScheme switch
@@ -60,9 +60,17 @@ public partial class SettingsFlyout : UserControl
         };
         TickTimingCombo.SelectedIndex = s.TickTriggerSeconds switch
         {
-            0 => 1,
-            10 => 2,
-            _ => 0
+            10 => 0,
+            15 => 1,
+            20 => 2,
+            25 => 3,
+            30 => 4,
+            45 => 5,
+            60 => 6,
+            120 => 7,
+            300 => 8,
+            0 => 9,
+            _ => 4
         };
 
         // Theme
@@ -139,30 +147,39 @@ public partial class SettingsFlyout : UserControl
         {
             VolumeValueText.Text = $"{(int)SoundVolumeSlider.Value}%";
         }
+        if (IsLoaded)
+        {
+            App.Settings.SoundVolume = (int)SoundVolumeSlider.Value;
+        }
     }
 
     private void SoundSchemeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Selection change handled on save or test
+        if (IsLoaded)
+        {
+            App.Settings.SoundScheme = SoundSchemeCombo.SelectedIndex switch
+            {
+                1 => "Classic",
+                2 => "Soft",
+                _ => "Modern"
+            };
+        }
     }
 
     private void TestSoundButton_Click(object sender, RoutedEventArgs e)
     {
-        var prevVol = App.Settings.SoundVolume;
-        var prevScheme = App.Settings.SoundScheme;
-
-        App.Settings.SoundVolume = (int)SoundVolumeSlider.Value;
-        App.Settings.SoundScheme = SoundSchemeCombo.SelectedIndex switch
+        int vol = (int)SoundVolumeSlider.Value;
+        string scheme = SoundSchemeCombo.SelectedIndex switch
         {
             1 => "Classic",
             2 => "Soft",
             _ => "Modern"
         };
 
-        SoundService.PlayToggleTest();
+        App.Settings.SoundVolume = vol;
+        App.Settings.SoundScheme = scheme;
 
-        App.Settings.SoundVolume = prevVol;
-        App.Settings.SoundScheme = prevScheme;
+        SoundService.PlayToggleTest(vol, scheme);
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -196,9 +213,17 @@ public partial class SettingsFlyout : UserControl
         };
         s.TickTriggerSeconds = TickTimingCombo.SelectedIndex switch
         {
-            1 => 0,
-            2 => 10,
-            _ => 60
+            0 => 10,
+            1 => 15,
+            2 => 20,
+            3 => 25,
+            4 => 30,
+            5 => 45,
+            6 => 60,
+            7 => 120,
+            8 => 300,
+            9 => 0,
+            _ => 30
         };
         s.Theme = (AppTheme)ThemeCombo.SelectedIndex;
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
@@ -218,7 +243,7 @@ public partial class SettingsFlyout : UserControl
         s.Theme = Enum.TryParse<AppTheme>(defaults.Theme, true, out var t) ? t : AppTheme.Dark;
         s.AlwaysOnTop = defaults.AlwaysOnTop;
         s.SoundEnabled = defaults.SoundEnabled;
-        s.SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 80;
+        s.SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 50;
         s.SoundScheme = !string.IsNullOrWhiteSpace(defaults.SoundScheme) ? defaults.SoundScheme : "Modern";
         s.TickTriggerSeconds = defaults.TickTriggerSeconds;
         s.DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
