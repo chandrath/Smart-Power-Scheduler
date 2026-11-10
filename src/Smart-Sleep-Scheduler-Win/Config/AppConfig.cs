@@ -84,5 +84,10 @@ public sealed class AppDefaults
     public int UrgencyWarningThresholdSeconds { get; set; } = 30;
     public string WakeUpTitle { get; set; } = "Welcome Back, Sleepyhead! 😴";
     public string WakeUpMessage { get; set; } = "Your PC just enjoyed a refreshing power nap.";
+    public int[] BlockerCheckMilestonesSeconds { get; set; } = [900, 300, 60, 30];
+    public string[] KnownSleepBlockerProcesses { get; set; } =
+    [
+        "caffeine", "dontsleep", "powertoys.awake", "mousejiggler", "nosleep", "stayawake", "amphetamine"
+    ];
 }
 

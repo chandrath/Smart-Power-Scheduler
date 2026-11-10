@@ -33,6 +33,20 @@ public partial class SettingsFlyout : UserControl
         AboutCopyrightText.Text = $"{cfg.App.Copyright} • {cfg.App.Vendor}";
         AboutDescText.Text = cfg.App.Description;
 
+        // Elevation Status
+        bool isAdmin = SleepBlockerService.IsAdministrator();
+        AdminStatusText.Text = isAdmin ? "🛡️ Administrator" : "🛡️ Standard User";
+        AdminDescText.Text = isAdmin
+            ? "Deep kernel power request inspection is active."
+            : "Admin rights enable deep kernel sleep blocker inspection.";
+        RelaunchAdminButton.IsEnabled = !isAdmin;
+        RelaunchAdminButton.Opacity = isAdmin ? 0.4 : 1.0;
+        if (isAdmin)
+        {
+            AdminStatusText.Foreground = (System.Windows.Media.Brush)FindResource("StartBrush");
+            RelaunchAdminButton.Content = "Active";
+        }
+
         // Defaults duration
         DecomposeSeconds(s.DefaultTimerDurationSeconds, out int defVal, out int defUnitIdx);
         DefaultDurationInput.Text = defVal.ToString();
@@ -278,6 +292,11 @@ public partial class SettingsFlyout : UserControl
         {
             MessageBox.Show($"Unable to open folder: {ex.Message}", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private void RelaunchAdminButton_Click(object sender, RoutedEventArgs e)
+    {
+        SleepBlockerService.RelaunchAsAdministrator();
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

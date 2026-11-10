@@ -30,7 +30,17 @@
     "MaxTimerSeconds": 43200,
     "UrgencyWarningThresholdSeconds": 30,
     "WakeUpTitle": "Welcome Back, Sleepyhead! 😴",
-    "WakeUpMessage": "Your PC just enjoyed a refreshing power nap."
+    "WakeUpMessage": "Your PC just enjoyed a refreshing power nap.",
+    "BlockerCheckMilestonesSeconds": [900, 300, 60, 30],
+    "KnownSleepBlockerProcesses": [
+      "caffeine",
+      "dontsleep",
+      "powertoys.awake",
+      "mousejiggler",
+      "nosleep",
+      "stayawake",
+      "amphetamine"
+    ]
   }
 }
 

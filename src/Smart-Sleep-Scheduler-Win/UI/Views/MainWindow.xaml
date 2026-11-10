@@ -150,6 +150,31 @@
                             <TextBlock Text="↺" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" />
                         </Button>
                     </StackPanel>
+
+                    <!-- Sleep Blocker Warning Pill (Non-intrusive, dismissable) -->
+                    <Border x:Name="BlockerWarningPill"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,-18"
+                            Background="#33EF4444"
+                            BorderBrush="{DynamicResource UrgencyBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="10,3"
+                            Cursor="Hand"
+                            Visibility="Collapsed"
+                            MouseDown="BlockerWarningPill_MouseDown"
+                            ToolTip="Click to review options">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⚠️" FontSize="10" Margin="0,0,5,0" VerticalAlignment="Center" />
+                            <TextBlock x:Name="BlockerWarningText"
+                                       Text="Sleep blocker active"
+                                       FontSize="10.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource UrgencyBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
                 <!-- Bottom Control Bar: Hero Full-Width [ START / STOP ] -->
@@ -172,13 +197,58 @@
                 </Border>
             </Grid>
 
-            <!-- Wake Up / Welcome Back Overlay -->
+            <!-- Wake Up / Welcome Back Overlay (Responsive Viewbox for Fullscreen) -->
             <Grid x:Name="WakeUpOverlay"
-                  Background="#99000000"
+                  Background="#E6000000"
                   Visibility="Collapsed">
-                <views:WakeUpView x:Name="WakeUpControl"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center" />
+                <Viewbox Stretch="Uniform"
+                         MaxWidth="420"
+                         MaxHeight="420"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Margin="16">
+                    <views:WakeUpView x:Name="WakeUpControl" />
+                </Viewbox>
+            </Grid>
+
+            <!-- Sleep Blocker Action Popover / Dialog -->
+            <Grid x:Name="BlockerDialogOverlay"
+                  Background="#CC000000"
+                  Visibility="Collapsed">
+                <Border Width="330"
+                        Background="{DynamicResource SolidCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource UrgencyBrush}"
+                        BorderThickness="1.5"
+                        CornerRadius="12"
+                        Padding="18"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="⚠️ Sleep Blocker Detected"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource UrgencyBrush}"
+                                   Margin="0,0,0,6" />
+                        <TextBlock x:Name="BlockerDialogMessage"
+                                   Text="An active application may prevent normal Windows sleep."
+                                   FontSize="11.5"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,16" />
+                        <Button x:Name="SwitchToForceSleepButton"
+                                Content="⚡ Enable Force Sleep (Guaranteed)"
+                                Style="{StaticResource DangerButtonStyle}"
+                                Height="38"
+                                FontWeight="Bold"
+                                Margin="0,0,0,8"
+                                Click="SwitchToForceSleepButton_Click" />
+                        <Button x:Name="DismissBlockerWarningButton"
+                                Content="Dismiss &amp; Ignore"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Height="34"
+                                Click="DismissBlockerWarningButton_Click" />
+                    </StackPanel>
+                </Border>
             </Grid>
 
             <!-- Slide-in / Modal Settings Overlay -->

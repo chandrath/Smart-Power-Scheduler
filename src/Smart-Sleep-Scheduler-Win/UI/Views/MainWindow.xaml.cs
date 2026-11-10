@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.Win32;
 using SmartSleepScheduler.Config;
 using SmartSleepScheduler.Core;
@@ -14,6 +15,9 @@ public partial class MainWindow : Window
     private bool _isFullscreen;
     private Rect _restoreBounds;
     private TimeSpan _readyDuration;
+    private bool _blockerWarningDismissed;
+    private string? _currentBlockerName;
+    private int _lastMilestoneChecked = -1;
 
     public MainWindow()
     {
@@ -90,6 +94,9 @@ public partial class MainWindow : Window
     private void OnWakeUpStartRequested(TimeSpan duration)
     {
         WakeUpOverlay.Visibility = Visibility.Collapsed;
+        _lastMilestoneChecked = -1;
+        _blockerWarningDismissed = false;
+        CheckForSleepBlockers();
         _readyDuration = duration;
         _timerService.Start(duration);
     }
@@ -99,6 +106,14 @@ public partial class MainWindow : Window
         if (_timerService.State == TimerState.Running)
         {
             UpdateDisplay(remaining);
+
+            int remainingSecs = (int)Math.Ceiling(remaining.TotalSeconds);
+            var milestones = AppConfig.Instance.Defaults.BlockerCheckMilestonesSeconds;
+            if (remainingSecs != _lastMilestoneChecked && Array.IndexOf(milestones, remainingSecs) >= 0)
+            {
+                _lastMilestoneChecked = remainingSecs;
+                CheckForSleepBlockers();
+            }
         }
     }
 
@@ -144,6 +159,9 @@ public partial class MainWindow : Window
             GearButton.IsEnabled = true;
             GearButton.Opacity = 1.0;
             GearButton.ToolTip = "Settings";
+
+            BlockerWarningPill.Visibility = Visibility.Collapsed;
+            BlockerDialogOverlay.Visibility = Visibility.Collapsed;
 
             UpdateStartButtonContent();
             UpdateDisplay(_readyDuration);
@@ -245,11 +263,7 @@ public partial class MainWindow : Window
         App.Settings.SoundEnabled = !App.Settings.SoundEnabled;
         App.Settings.Save();
         UpdateSoundVisual();
-
-        if (App.Settings.SoundEnabled)
-        {
-            SoundService.PlayToggleTest();
-        }
+        if (App.Settings.SoundEnabled) SoundService.PlayToggleTest();
     }
 
     private void UpdateSoundVisual()
@@ -257,9 +271,7 @@ public partial class MainWindow : Window
         bool sound = App.Settings.SoundEnabled;
         SoundButton.Opacity = sound ? 1.0 : 0.45;
         SoundIconText.Text = sound ? "🔊" : "🔇";
-        SoundIconText.Foreground = sound
-            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
-            : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+        SoundIconText.Foreground = (Brush)FindResource(sound ? "AccentBrush" : "TextSecondaryBrush");
     }
 
     private void PinButton_Click(object sender, RoutedEventArgs e)
@@ -273,15 +285,10 @@ public partial class MainWindow : Window
     private void UpdatePinVisual()
     {
         PinButton.Opacity = Topmost ? 1.0 : 0.45;
-        PinIconText.Foreground = Topmost
-            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
-            : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+        PinIconText.Foreground = (Brush)FindResource(Topmost ? "AccentBrush" : "TextSecondaryBrush");
     }
 
-    private void FullscreenButton_Click(object sender, RoutedEventArgs e)
-    {
-        ToggleFullscreen();
-    }
+    private void FullscreenButton_Click(object sender, RoutedEventArgs e) => ToggleFullscreen();
 
     private void ToggleFullscreen()
     {
@@ -324,14 +331,60 @@ public partial class MainWindow : Window
         else
         {
             CountdownControl.CommitIfEditing();
+            _lastMilestoneChecked = -1;
+            _blockerWarningDismissed = false;
+            CheckForSleepBlockers();
             _timerService.Start(_readyDuration);
         }
+    }
+
+    private void CheckForSleepBlockers()
+    {
+        if (App.Settings.AllowForceActions || _blockerWarningDismissed) return;
+
+        Task.Run(() =>
+        {
+            var (hasBlocker, blockerName) = SleepBlockerService.DetectActiveBlocker();
+            if (hasBlocker)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_blockerWarningDismissed || App.Settings.AllowForceActions) return;
+                    _currentBlockerName = blockerName;
+                    BlockerWarningText.Text = $"Blocker: {blockerName}";
+                    BlockerDialogMessage.Text = $"Active application '{blockerName}' may prevent normal Windows sleep.\n\nYou can switch to Force Sleep to guarantee sleep, or dismiss this warning.";
+                    BlockerWarningPill.Visibility = Visibility.Visible;
+                });
+            }
+            else
+            {
+                Dispatcher.Invoke(() => BlockerWarningPill.Visibility = Visibility.Collapsed);
+            }
+        });
+    }
+
+    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e) =>
+        BlockerDialogOverlay.Visibility = Visibility.Visible;
+
+    private void SwitchToForceSleepButton_Click(object sender, RoutedEventArgs e)
+    {
+        App.Settings.AllowForceActions = true;
+        App.Settings.Save();
+        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+        BlockerWarningPill.Visibility = Visibility.Collapsed;
+        _blockerWarningDismissed = true;
+    }
+
+    private void DismissBlockerWarningButton_Click(object sender, RoutedEventArgs e)
+    {
+        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+        BlockerWarningPill.Visibility = Visibility.Collapsed;
+        _blockerWarningDismissed = true;
     }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         if (_timerService.State != TimerState.Stopped) return;
-
         CountdownControl.CancelInlineEdit();
         _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
         UpdateDisplay(_readyDuration);
@@ -342,7 +395,6 @@ public partial class MainWindow : Window
     private void MinusOneButton_Click(object sender, RoutedEventArgs e)
     {
         if (_timerService.State != TimerState.Stopped) return;
-
         if (_readyDuration > TimeSpan.FromMinutes(1))
         {
             _readyDuration = _readyDuration.Subtract(TimeSpan.FromMinutes(1));
@@ -355,7 +407,6 @@ public partial class MainWindow : Window
     private void PlusOneButton_Click(object sender, RoutedEventArgs e)
     {
         if (_timerService.State != TimerState.Stopped) return;
-
         _readyDuration = _readyDuration.Add(TimeSpan.FromMinutes(1));
         UpdateDisplay(_readyDuration);
         UpdateStartButtonContent();
@@ -364,37 +415,37 @@ public partial class MainWindow : Window
 
     private void PencilButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State != TimerState.Stopped) return;
-
-        CountdownControl.StartInlineEdit();
+        if (_timerService.State == TimerState.Stopped) CountdownControl.StartInlineEdit();
     }
-
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {
+            if (BlockerDialogOverlay.Visibility == Visibility.Visible)
+            {
+                BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+                e.Handled = true;
+                return;
+            }
             if (WakeUpOverlay.Visibility == Visibility.Visible)
             {
                 WakeUpOverlay.Visibility = Visibility.Collapsed;
                 e.Handled = true;
                 return;
             }
-
             if (SettingsOverlay.Visibility == Visibility.Visible)
             {
                 SettingsOverlay.Visibility = Visibility.Collapsed;
                 e.Handled = true;
                 return;
             }
-
             if (_isFullscreen)
             {
                 ToggleFullscreen();
                 e.Handled = true;
                 return;
             }
-
             if (_timerService.State == TimerState.Running)
             {
                 _timerService.Stop();
@@ -421,13 +472,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
-    private void CloseWindowButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
+    private void CloseWindowButton_Click(object sender, RoutedEventArgs e) => Close();
 }

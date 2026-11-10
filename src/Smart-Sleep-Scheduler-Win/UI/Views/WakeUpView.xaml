@@ -7,7 +7,7 @@
              d:DesignHeight="380" d:DesignWidth="360">
 
     <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Border Background="{DynamicResource CardBackgroundBrush}"
+        <Border Background="{DynamicResource SolidCardBackgroundBrush}"
                 BorderBrush="{DynamicResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="16"
@@ -99,27 +99,27 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Exit Button -->
-                    <Button x:Name="ExitButton"
+                    <!-- Start Again Button (Subtle Secondary) -->
+                    <Button x:Name="StartAgainButton"
                             Grid.Column="0"
-                            Content="Exit"
+                            Content="Start Again"
                             Style="{StaticResource FluentButtonStyle}"
                             Height="44"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            Click="ExitButton_Click"
-                            ToolTip="Close the application" />
+                            Click="StartAgainButton_Click"
+                            ToolTip="Start new sleep countdown" />
 
-                    <!-- Start Again Button -->
-                    <Button x:Name="StartAgainButton"
+                    <!-- Exit Button (Highlighted Hero Action) -->
+                    <Button x:Name="ExitButton"
                             Grid.Column="2"
-                            Content="Start Again"
+                            Content="Exit"
                             Style="{StaticResource AccentButtonStyle}"
                             Height="44"
                             FontSize="14"
                             FontWeight="Bold"
-                            Click="StartAgainButton_Click"
-                            ToolTip="Start new sleep countdown" />
+                            Click="ExitButton_Click"
+                            ToolTip="Close the application" />
                 </Grid>
             </StackPanel>
         </Border>
