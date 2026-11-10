@@ -1,0 +1,83 @@
+<UserControl x:Class="SmartSleepScheduler.UI.Controls.CountdownDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="260" d:DesignWidth="360">
+
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <!-- Glowing Urgency Background Circle -->
+        <Border x:Name="GlowCircle"
+                Width="240" Height="240"
+                CornerRadius="120"
+                Opacity="0"
+                Background="{DynamicResource UrgencyBrush}">
+            <Border.Effect>
+                <BlurEffect Radius="45" />
+            </Border.Effect>
+        </Border>
+
+        <!-- Main Circular Card / Frame -->
+        <Border Width="220" Height="220"
+                CornerRadius="110"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1">
+            <Grid>
+                <!-- Circular Track Background -->
+                <Ellipse Width="190" Height="190"
+                         Stroke="{DynamicResource ButtonBackgroundBrush}"
+                         StrokeThickness="6" />
+
+                <!-- Progress Ring -->
+                <ProgressBar x:Name="CircularProgress"
+                             Width="190" Height="190"
+                             Minimum="0" Maximum="1" Value="1"
+                             Foreground="{DynamicResource AccentBrush}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Opacity="0.85"
+                             IsHitTestVisible="False"
+                             Visibility="Collapsed" />
+
+                <!-- Center Content -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <!-- Icon / Action badge -->
+                    <Border x:Name="ActionBadge"
+                            Background="{DynamicResource ButtonBackgroundBrush}"
+                            CornerRadius="12"
+                            Padding="10,4"
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center">
+                        <TextBlock x:Name="ActionLabel"
+                                   Text="🌙 SLEEP"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontFamily="Segoe UI Variable Text, Segoe UI" />
+                    </Border>
+
+                    <!-- Big Countdown Digits -->
+                    <TextBlock x:Name="TimeText"
+                               Text="01:00"
+                               FontSize="44"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+
+                    <!-- Status sub-label -->
+                    <TextBlock x:Name="StatusSubText"
+                               Text="Scheduled Sleep"
+                               FontSize="12"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontFamily="Segoe UI Variable Text, Segoe UI" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
+

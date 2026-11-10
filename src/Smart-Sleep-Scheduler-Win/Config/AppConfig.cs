@@ -1,0 +1,82 @@
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using SmartSleepScheduler.Core;
+
+namespace SmartSleepScheduler.Config;
+
+/// <summary>
+/// Single Source of Truth (SSOT) configuration model loaded from DevConfig.json.
+/// Centralizes all metadata, default preferences, and system thresholds.
+/// </summary>
+public sealed class AppConfig
+{
+    private static AppConfig? _instance;
+    public static AppConfig Instance => _instance ??= Load();
+
+    [JsonPropertyName("App")]
+    public AppMetadata App { get; set; } = new();
+
+    [JsonPropertyName("Defaults")]
+    public AppDefaults Defaults { get; set; } = new();
+
+    public static AppConfig Load()
+    {
+        try
+        {
+            // 1. Try loading from file directly adjacent to executable or project
+            string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config", "DevConfig.json");
+            if (File.Exists(localPath))
+            {
+                string json = File.ReadAllText(localPath);
+                var loaded = JsonSerializer.Deserialize<AppConfig>(json);
+                if (loaded != null) return loaded;
+            }
+
+            // 2. Try loading from embedded resource
+            var assembly = Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream("SmartSleepScheduler.Config.DevConfig.json");
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                string json = reader.ReadToEnd();
+                var loaded = JsonSerializer.Deserialize<AppConfig>(json);
+                if (loaded != null) return loaded;
+            }
+        }
+        catch
+        {
+            // Fallback gracefully to default values below if file I/O is restricted
+        }
+
+        return new AppConfig();
+    }
+}
+
+public sealed class AppMetadata
+{
+    public string Name { get; set; } = "SmartSleepScheduler";
+    public string DisplayName { get; set; } = "Smart Sleep Scheduler";
+    public string Description { get; set; } = "A clean, modern Windows smart sleep timer and power scheduler with Fluent translucent design.";
+    public string Version { get; set; } = "0.9.0.1";
+    public string Vendor { get; set; } = "SmartSleep";
+    public string Copyright { get; set; } = "Copyright © 2026 SmartSleep";
+    public string AppId { get; set; } = "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B";
+    public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Sleep-Scheduler";
+}
+
+public sealed class AppDefaults
+{
+    public string Theme { get; set; } = "Dark";
+    public bool AlwaysOnTop { get; set; } = true;
+    public int DefaultTimerDurationSeconds { get; set; } = 180;
+    public bool AutoStartOnLaunch { get; set; } = true;
+    public int AutoStartDurationSeconds { get; set; } = 60;
+    public string DefaultPowerAction { get; set; } = "Sleep";
+    public bool AllowForceActions { get; set; } = false;
+    public int MinTimerSeconds { get; set; } = 1;
+    public int MaxTimerSeconds { get; set; } = 43200;
+    public int UrgencyWarningThresholdSeconds { get; set; } = 30;
+}
+

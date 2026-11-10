@@ -1,0 +1,235 @@
+<UserControl x:Class="SmartSleepScheduler.UI.Views.SettingsFlyout"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="550" d:DesignWidth="380">
+
+    <Border Background="{DynamicResource WindowBackgroundBrush}"
+            BorderBrush="{DynamicResource CardBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Header with Close Button -->
+                <Grid Margin="0,0,0,16">
+                    <TextBlock Text="Settings &amp; Preferences"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="CloseButton"
+                            HorizontalAlignment="Right"
+                            Style="{StaticResource IconButtonStyle}"
+                            Click="CloseButton_Click"
+                            ToolTip="Close Settings (Esc)">
+                        <TextBlock Text="✕" FontSize="14" FontWeight="Bold" />
+                    </Button>
+                </Grid>
+
+                <!-- Section: Default Timer Duration -->
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Default Timer Duration"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Default countdown duration when resetting or starting manually."
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,2,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="3*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="DefaultDurationInput"
+                                     Grid.Column="0"
+                                     Text="3"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
+                            <ComboBox x:Name="DefaultDurationUnitCombo"
+                                      Grid.Column="2">
+                                <ComboBoxItem Content="Seconds" />
+                                <ComboBoxItem Content="Minutes" IsSelected="True" />
+                                <ComboBoxItem Content="Hours" />
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Section: Auto-Start on Launch -->
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <CheckBox x:Name="AutoStartCheck"
+                                  Content="Auto-start countdown on launch"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  IsChecked="True"
+                                  Margin="0,0,0,6" />
+                        <TextBlock Text="Starts a 1-minute countdown automatically when app opens."
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="3*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="AutoStartDurationInput"
+                                     Grid.Column="0"
+                                     Text="1"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
+                            <ComboBox x:Name="AutoStartDurationUnitCombo"
+                                      Grid.Column="2">
+                                <ComboBoxItem Content="Seconds" />
+                                <ComboBoxItem Content="Minutes" IsSelected="True" />
+                                <ComboBoxItem Content="Hours" />
+                            </ComboBox>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Section: Window & Appearance -->
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Window &amp; Appearance"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8" />
+
+                        <CheckBox x:Name="AlwaysOnTopCheck"
+                                  Content="Always keep window on top"
+                                  FontSize="12"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  IsChecked="True"
+                                  Margin="0,0,0,10" />
+
+                        <TextBlock Text="Theme Preference"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeCombo_SelectionChanged">
+                            <ComboBoxItem Content="Dark Mode (Default)" IsSelected="True" />
+                            <ComboBoxItem Content="Light Mode" />
+                            <ComboBoxItem Content="Windows System Auto" />
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Section: Power Action -->
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Power Action on Expiry"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Default is safe Sleep without closing or forcing applications."
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,2,0,8" />
+                        <ComboBox x:Name="PowerActionCombo" SelectionChanged="PowerActionCombo_SelectionChanged">
+                            <ComboBoxItem Content="Sleep (Default - Safe)" IsSelected="True" />
+                            <ComboBoxItem Content="Hibernate" />
+                            <ComboBoxItem Content="Shutdown (Graceful)" />
+                            <ComboBoxItem Content="Restart (Graceful)" />
+                            <ComboBoxItem Content="Force Shutdown (Advanced)" />
+                            <ComboBoxItem Content="Force Restart (Advanced)" />
+                        </ComboBox>
+
+                        <!-- Force Action Warning Banner -->
+                        <Border x:Name="ForceWarningBanner"
+                                Background="#33EF4444"
+                                BorderBrush="{DynamicResource UrgencyBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8"
+                                Margin="0,8,0,0"
+                                Visibility="Collapsed">
+                            <TextBlock Text="⚠️ Caution: Force action will close apps immediately without saving changes."
+                                       FontSize="11"
+                                       Foreground="{DynamicResource UrgencyBrush}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Section: About (Single Source of Truth) -->
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock x:Name="AboutAppNameText"
+                                   Text="Smart Sleep Scheduler"
+                                   FontWeight="Bold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock x:Name="AboutVersionText"
+                                   Text="Version 0.9.0.1"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   Margin="0,2,0,4" />
+                        <TextBlock x:Name="AboutCopyrightText"
+                                   Text="Copyright © 2026 SmartSleep"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="0,0,0,6" />
+                        <TextBlock x:Name="AboutDescText"
+                                   Text="A clean, modern Windows smart sleep timer and power scheduler."
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Bottom Action Buttons -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ResetDefaultsButton"
+                            Grid.Column="0"
+                            Content="Reset Defaults"
+                            Style="{StaticResource FluentButtonStyle}"
+                            Click="ResetDefaultsButton_Click" />
+                    <Button x:Name="SaveButton"
+                            Grid.Column="2"
+                            Content="Save &amp; Apply"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Click="SaveButton_Click" />
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>
+

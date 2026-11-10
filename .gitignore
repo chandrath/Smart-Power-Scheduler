@@ -1,0 +1,33 @@
+## Visual Studio & .NET
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build outputs & Publish artifacts
+artifacts/
+publish/
+dist/
+releases/
+*.nupkg
+*.snupkg
+
+## Inno Setup
+Output/
+_Output/
+
+## Windows OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## User Runtime Config / State
+user_settings.json
+*.local.json
+
