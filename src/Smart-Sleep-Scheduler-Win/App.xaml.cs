@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
@@ -11,30 +12,46 @@ public partial class App : Application
 {
     private const string UniqueAppGuid = "SmartSleepScheduler_SingleInstance_Mutex_9E2F9F24";
     private static Mutex? _mutex;
+    private static bool _ownsMutex;
+
+    private const int SW_RESTORE = 9;
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 
     public static UserSettings Settings { get; private set; } = null!;
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
-        // 1. Single Instance Check
+        // 1. Single Instance Check & Activate Existing Instance
         _mutex = new Mutex(true, UniqueAppGuid, out bool isNewInstance);
         if (!isNewInstance)
         {
-            // Activate existing instance
-            IntPtr existingHwnd = FindWindow(null, AppConfig.Instance.App.DisplayName);
-            if (existingHwnd != IntPtr.Zero)
+            try
             {
-                SetForegroundWindow(existingHwnd);
+                var current = Process.GetCurrentProcess();
+                var existing = Process.GetProcessesByName(current.ProcessName)
+                    .FirstOrDefault(p => p.Id != current.Id);
+
+                if (existing != null && existing.MainWindowHandle != IntPtr.Zero)
+                {
+                    ShowWindowAsync(existing.MainWindowHandle, SW_RESTORE);
+                    SetForegroundWindow(existing.MainWindowHandle);
+                }
             }
-            Shutdown();
+            catch
+            {
+                // Silently exit if activation fails
+            }
+
+            Shutdown(0);
             return;
         }
+
+        _ownsMutex = true;
 
         // 2. Initialize Single Source of Truth
         _ = AppConfig.Instance;
@@ -52,7 +69,17 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _mutex?.ReleaseMutex();
+        if (_ownsMutex)
+        {
+            try
+            {
+                _mutex?.ReleaseMutex();
+            }
+            catch
+            {
+                // Ignore if mutex already abandoned or released
+            }
+        }
         _mutex?.Dispose();
         base.OnExit(e);
     }

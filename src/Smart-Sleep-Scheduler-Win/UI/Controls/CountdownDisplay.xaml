@@ -4,142 +4,135 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignHeight="380" d:DesignWidth="360">
+             d:DesignHeight="330" d:DesignWidth="360">
 
-    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Grid.RowDefinitions>
-            <!-- Row 0: Large Header outside & above the ring with auto-fitting Viewbox -->
-            <RowDefinition Height="Auto" />
-            <!-- Row 1: The Circular Frame with Ring & Countdown -->
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,4">
+        <!-- Glowing Urgency Background Circle -->
+        <Border x:Name="GlowCircle"
+                Width="290" Height="290"
+                CornerRadius="145"
+                Opacity="0"
+                Background="{DynamicResource UrgencyBrush}">
+            <Border.Effect>
+                <BlurEffect Radius="50" />
+            </Border.Effect>
+        </Border>
 
-        <!-- Big Bold Header in Viewbox (Never clips or overflows at any window size) -->
-        <Viewbox Grid.Row="0"
-                 Stretch="Uniform"
-                 MaxHeight="36"
-                 MaxWidth="320"
-                 HorizontalAlignment="Center"
-                 Margin="0,0,0,14">
-            <TextBlock x:Name="TopHeaderText"
-                       Text="YOUR PC WILL BE"
-                       FontSize="26"
-                       FontWeight="Black"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
-        </Viewbox>
+        <!-- Main Circular Card / Frame -->
+        <Border Width="270" Height="270"
+                CornerRadius="135"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1.5">
+            <Grid>
+                <!-- Circular Track Background -->
+                <Ellipse Width="240" Height="240"
+                         Stroke="{DynamicResource ButtonBackgroundBrush}"
+                         StrokeThickness="9" />
 
-        <!-- Circular Frame Area -->
-        <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <!-- Glowing Urgency Background Circle -->
-            <Border x:Name="GlowCircle"
-                    Width="270" Height="270"
-                    CornerRadius="135"
-                    Opacity="0"
-                    Background="{DynamicResource UrgencyBrush}">
-                <Border.Effect>
-                    <BlurEffect Radius="50" />
-                </Border.Effect>
-            </Border>
+                <!-- Circular Accent Track -->
+                <Ellipse x:Name="ProgressTrackRing"
+                         Width="240" Height="240"
+                         Stroke="{DynamicResource AccentBrush}"
+                         StrokeThickness="3.5"
+                         Opacity="0.45" />
 
-            <!-- Main Circular Card / Frame -->
-            <Border Width="260" Height="260"
-                    CornerRadius="130"
-                    Background="{DynamicResource CardBackgroundBrush}"
-                    BorderBrush="{DynamicResource CardBorderBrush}"
-                    BorderThickness="1.5">
-                <Grid>
-                    <!-- Circular Track Background -->
-                    <Ellipse Width="230" Height="230"
-                             Stroke="{DynamicResource ButtonBackgroundBrush}"
-                             StrokeThickness="8" />
+                <!-- Header Text Overlapping Directly on the Top of the Ring -->
+                <Viewbox Stretch="Uniform"
+                         MaxHeight="32"
+                         MaxWidth="240"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Top"
+                         Margin="0,22,0,0">
+                    <TextBlock x:Name="TopHeaderText"
+                               Text="YOUR PC WILL BE"
+                               FontSize="22"
+                               FontWeight="Black"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+                </Viewbox>
 
-                    <!-- Circular Accent Track -->
-                    <Ellipse x:Name="ProgressTrackRing"
-                             Width="230" Height="230"
-                             Stroke="{DynamicResource AccentBrush}"
-                             StrokeThickness="3"
-                             Opacity="0.4" />
+                <!-- Center Content: Action Badge, Countdown Digits, Subtitle -->
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Margin="0,32,0,0">
 
-                    <!-- Center Content -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <!-- Action Badge (e.g. 🌙 SLEEP or 🛑 SHUTDOWN) -->
-                        <Border x:Name="ActionBadge"
-                                Background="{DynamicResource ButtonBackgroundBrush}"
-                                BorderBrush="{DynamicResource CardBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="12,4"
-                                Margin="0,0,0,10"
-                                HorizontalAlignment="Center">
-                            <TextBlock x:Name="ActionBadgeText"
-                                       Text="🌙 SLEEP"
-                                       FontSize="12"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource AccentBrush}"
-                                       FontFamily="Segoe UI Variable Text, Segoe UI" />
-                        </Border>
-
-                        <!-- Countdown Digits Row with Optional 'IN ' Prefix & Blinking Live Dot -->
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center">
-                            <!-- 'IN ' prefix (visible only when timer running or paused) -->
-                            <TextBlock x:Name="InPrefixText"
-                                       Text="IN "
-                                       FontSize="22"
-                                       FontWeight="Black"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,4,4,0"
-                                       FontFamily="Segoe UI Variable Display, Segoe UI" />
-
-                            <!-- Big Countdown Digits (Clickable) -->
-                            <TextBlock x:Name="TimeText"
-                                       Text="01:00"
-                                       FontSize="48"
-                                       FontWeight="Black"
-                                       Cursor="Hand"
-                                       ToolTip="Click to type custom duration"
-                                       MouseDown="TimeText_MouseDown"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
-
-                            <!-- Inline Edit Box (Appears on click) -->
-                            <TextBox x:Name="TimeEditBox"
-                                     Text="01:00"
-                                     FontSize="36"
-                                     FontWeight="Black"
-                                     Width="130"
-                                     TextAlignment="Center"
-                                     VerticalAlignment="Center"
-                                     Visibility="Collapsed"
-                                     KeyDown="TimeEditBox_KeyDown"
-                                     LostFocus="TimeEditBox_LostFocus" />
-
-                            <!-- Live Warning Blinking Red Dot (< 60s) -->
-                            <Ellipse x:Name="LiveBlinkDot"
-                                     Width="10" Height="10"
-                                     Fill="{DynamicResource UrgencyBrush}"
-                                     Margin="8,0,0,0"
-                                     VerticalAlignment="Center"
-                                     Visibility="Collapsed" />
-                        </StackPanel>
-
-                        <!-- Status sub-label -->
-                        <TextBlock x:Name="StatusSubText"
-                                   Text="Scheduled Sleep"
+                    <!-- Action Badge (e.g. 🌙 SLEEP or 🛑 SHUTDOWN) -->
+                    <Border x:Name="ActionBadge"
+                            Background="{DynamicResource ButtonBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="13"
+                            Padding="14,4"
+                            Margin="0,0,0,8"
+                            HorizontalAlignment="Center">
+                        <TextBlock x:Name="ActionBadgeText"
+                                   Text="🌙 SLEEP"
                                    FontSize="12"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,8,0,0"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentBrush}"
                                    FontFamily="Segoe UI Variable Text, Segoe UI" />
+                    </Border>
+
+                    <!-- Countdown Digits Row with Optional 'IN ' Prefix & Blinking Live Dot -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <!-- 'IN ' prefix (visible only when timer running or paused) -->
+                        <TextBlock x:Name="InPrefixText"
+                                   Text="IN "
+                                   FontSize="22"
+                                   FontWeight="Black"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,6,4,0"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI" />
+
+                        <!-- Big Countdown Digits (Clickable) -->
+                        <TextBlock x:Name="TimeText"
+                                   Text="01:00"
+                                   FontSize="50"
+                                   FontWeight="Black"
+                                   Cursor="Hand"
+                                   ToolTip="Click to type custom duration"
+                                   MouseDown="TimeText_MouseDown"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+
+                        <!-- Inline Edit Box (Appears on click) -->
+                        <TextBox x:Name="TimeEditBox"
+                                 Text="01:00"
+                                 FontSize="36"
+                                 FontWeight="Black"
+                                 Width="130"
+                                 TextAlignment="Center"
+                                 VerticalAlignment="Center"
+                                 Visibility="Collapsed"
+                                 KeyDown="TimeEditBox_KeyDown"
+                                 LostFocus="TimeEditBox_LostFocus" />
+
+                        <!-- Live Warning Blinking Red Dot (< 60s) -->
+                        <Ellipse x:Name="LiveBlinkDot"
+                                 Width="10" Height="10"
+                                 Fill="{DynamicResource UrgencyBrush}"
+                                 Margin="8,0,0,0"
+                                 VerticalAlignment="Center"
+                                 Visibility="Collapsed" />
                     </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
+
+                    <!-- Status sub-label -->
+                    <TextBlock x:Name="StatusSubText"
+                               Text="Scheduled Sleep"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,6,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontFamily="Segoe UI Variable Text, Segoe UI" />
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
