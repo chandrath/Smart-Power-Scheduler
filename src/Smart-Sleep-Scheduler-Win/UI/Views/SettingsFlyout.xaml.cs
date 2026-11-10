@@ -17,6 +17,7 @@ public partial class SettingsFlyout : UserControl
 
     public event Action? Closed;
     public event Action? SettingsChanged;
+    public event Action? HistoryRequested;
 
     public SettingsFlyout()
     {
@@ -433,6 +434,11 @@ public partial class SettingsFlyout : UserControl
             HistoryService.ClearHistory();
             RefreshHistoryView();
         }
+    }
+
+    private void ViewFullAnalyticsButton_Click(object sender, RoutedEventArgs e)
+    {
+        HistoryRequested?.Invoke();
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

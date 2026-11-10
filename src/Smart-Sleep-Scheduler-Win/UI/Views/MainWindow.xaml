@@ -269,6 +269,20 @@
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center" />
             </Grid>
+
+            <!-- Full History & Analytics Overlay -->
+            <Grid x:Name="HistoryOverlay"
+                  Background="#E6000000"
+                  Visibility="Collapsed">
+                <Viewbox Stretch="Uniform"
+                         MaxWidth="420"
+                         MaxHeight="530"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Margin="14">
+                    <views:HistoryView x:Name="HistoryControl" Width="390" Height="500" />
+                </Viewbox>
+            </Grid>
         </Grid>
     </Border>
 </Window>

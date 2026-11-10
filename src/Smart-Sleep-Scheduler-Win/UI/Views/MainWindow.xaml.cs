@@ -32,6 +32,8 @@ public partial class MainWindow : Window
         CountdownControl.DurationPreviewChanged += OnDurationPreviewChanged;
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
+        SettingsPanel.HistoryRequested += ShowHistoryView;
+        HistoryControl.Closed += () => HistoryOverlay.Visibility = Visibility.Collapsed;
         WakeUpControl.StartRequested += OnWakeUpStartRequested;
         WakeUpControl.ExitRequested += () => Close();
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -78,6 +80,12 @@ public partial class MainWindow : Window
         int initialMins = Math.Max(1, App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds / 60 : 1);
         WakeUpControl.Initialize(App.Settings.WakeUpTitle, App.Settings.WakeUpMessage, initialMins);
         WakeUpOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void ShowHistoryView()
+    {
+        HistoryControl.RefreshData();
+        HistoryOverlay.Visibility = Visibility.Visible;
     }
 
     private void OnWakeUpStartRequested(TimeSpan duration)
@@ -193,11 +201,16 @@ public partial class MainWindow : Window
         _blockerWarningDismissed = false;
         SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
-        HistoryService.LogSessionTriggered(action, _readyDuration);
+        string recordId = HistoryService.LogSessionTriggered(action, _readyDuration);
         if (!PowerService.ExecuteAction(action, out string error) && !string.IsNullOrWhiteSpace(error))
+        {
+            HistoryService.LogSessionFailed(recordId, error);
             MessageBox.Show($"Failed to execute {action}: {error}", "Smart Sleep Scheduler", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
         else if (action == PowerAction.Sleep)
+        {
             ShowWakeUpView();
+        }
     }
 
     private void UpdateDisplay(TimeSpan remaining) =>
@@ -424,18 +437,6 @@ public partial class MainWindow : Window
         AdjustDuration(TimeSpan.Zero);
     }
 
-    private void MinusOneButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_timerService.State == TimerState.Stopped && _readyDuration > TimeSpan.FromMinutes(1))
-            AdjustDuration(TimeSpan.FromMinutes(-1));
-    }
-
-    private void PlusOneButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_timerService.State == TimerState.Stopped)
-            AdjustDuration(TimeSpan.FromMinutes(1));
-    }
-
     private void AdjustDuration(TimeSpan delta)
     {
         _readyDuration = _readyDuration.Add(delta);
@@ -444,16 +445,16 @@ public partial class MainWindow : Window
         UpdateMinusButtonState(_readyDuration);
     }
 
-    private void PencilButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_timerService.State == TimerState.Stopped) CountdownControl.StartInlineEdit();
-    }
+    private void MinusOneButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped && _readyDuration > TimeSpan.FromMinutes(1)) AdjustDuration(TimeSpan.FromMinutes(-1)); }
+    private void PlusOneButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped) AdjustDuration(TimeSpan.FromMinutes(1)); }
+    private void PencilButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped) CountdownControl.StartInlineEdit(); }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {
             if (BlockerDialogOverlay.Visibility == Visibility.Visible) { BlockerDialogOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
+            if (HistoryOverlay.Visibility == Visibility.Visible) { HistoryOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
             if (WakeUpOverlay.Visibility == Visibility.Visible) { WakeUpOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
             if (SettingsOverlay.Visibility == Visibility.Visible) { SettingsOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
             if (_isFullscreen) { ToggleFullscreen(); e.Handled = true; return; }

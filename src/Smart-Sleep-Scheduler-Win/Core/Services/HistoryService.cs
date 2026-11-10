@@ -73,6 +73,109 @@ public static class HistoryService
         }
     }
 
+    public static void LogSessionFailed(string recordId, string errorReason)
+    {
+        lock (FileLock)
+        {
+            try
+            {
+                var list = LoadRecordsInternal();
+                var record = list.FirstOrDefault(r => r.Id == recordId);
+                if (record != null)
+                {
+                    record.Status = "Failed";
+                    SaveRecordsInternal(list);
+                }
+            }
+            catch { }
+        }
+    }
+
+    public static void ExportHistory(string destinationPath)
+    {
+        lock (FileLock)
+        {
+            var list = LoadRecordsInternal();
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string json = JsonSerializer.Serialize(list, options);
+            File.WriteAllText(destinationPath, json);
+        }
+    }
+
+    public static void ImportHistory(string sourcePath, out int addedCount, out int skippedCount)
+    {
+        addedCount = 0;
+        skippedCount = 0;
+
+        string json = File.ReadAllText(sourcePath);
+        var incoming = JsonSerializer.Deserialize<List<SessionRecord>>(json);
+        if (incoming == null || incoming.Count == 0) return;
+
+        lock (FileLock)
+        {
+            var existing = LoadRecordsInternal();
+            foreach (var inc in incoming)
+            {
+                var match = existing.FirstOrDefault(e =>
+                    e.Id == inc.Id ||
+                    (e.Action == inc.Action && Math.Abs((e.Timestamp - inc.Timestamp).TotalSeconds) < 15));
+
+                if (match == null)
+                {
+                    existing.Add(inc);
+                    addedCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                    if (match.WakeUpTimestamp == null && inc.WakeUpTimestamp != null)
+                    {
+                        match.WakeUpTimestamp = inc.WakeUpTimestamp;
+                        match.Status = inc.Status;
+                    }
+                }
+            }
+
+            existing = existing.OrderByDescending(r => r.Timestamp).ToList();
+
+            int max = AppConfig.Instance.Defaults.MaxHistoryRecords > 0 ? AppConfig.Instance.Defaults.MaxHistoryRecords : 100000;
+            if (existing.Count > max) existing.RemoveRange(max, existing.Count - max);
+
+            SaveRecordsInternal(existing);
+        }
+    }
+
+    public static void GetAnalytics(out int total, out int thisMonth, out int thisYear, out string totalSleepTime)
+    {
+        var list = GetHistory();
+        total = list.Count;
+        var now = DateTime.Now;
+        thisMonth = list.Count(r => r.Timestamp.Year == now.Year && r.Timestamp.Month == now.Month);
+        thisYear = list.Count(r => r.Timestamp.Year == now.Year);
+
+        double totalHours = 0;
+        foreach (var r in list)
+        {
+            if (r.WakeUpTimestamp != null && r.WakeUpTimestamp > r.Timestamp)
+                totalHours += (r.WakeUpTimestamp.Value - r.Timestamp).TotalHours;
+        }
+
+        if (totalHours >= 1)
+        {
+            int h = (int)totalHours;
+            int m = (int)((totalHours - h) * 60);
+            totalSleepTime = m > 0 ? $"{h}h {m}m" : $"{h}h";
+        }
+        else if (totalHours > 0)
+        {
+            totalSleepTime = $"{(int)(totalHours * 60)}m";
+        }
+        else
+        {
+            totalSleepTime = "0h";
+        }
+    }
+
     public static List<SessionRecord> GetHistory()
     {
         lock (FileLock)

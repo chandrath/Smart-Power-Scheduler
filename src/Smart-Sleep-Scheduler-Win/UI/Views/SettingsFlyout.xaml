@@ -489,6 +489,16 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+
+                        <Button x:Name="ViewFullAnalyticsButton"
+                                Content="📊 Open Full Analytics &amp; Records"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Height="34"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Margin="0,8,0,0"
+                                Click="ViewFullAnalyticsButton_Click"
+                                ToolTip="Open full screen history with analytics, month/year filters, and import/export" />
                     </StackPanel>
                 </Border>
 
