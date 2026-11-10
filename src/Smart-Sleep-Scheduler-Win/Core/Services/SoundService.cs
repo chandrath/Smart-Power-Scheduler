@@ -5,86 +5,48 @@ using System.Media;
 using System.Text;
 
 /// <summary>
-/// Handles subtle audio feedback for countdown ticks and timer completion.
-/// Generates pristine PCM WAV audio in memory and plays via Windows SoundPlayer (WaveOut).
-/// Completely independent of console beep drivers or Windows sound scheme settings.
-/// Silent by default; strictly respects user SoundEnabled preference.
+/// Handles crisp audio feedback for countdown ticks and timer completion.
+/// Plays anti-aliased in-memory PCM WAV streams via Windows SoundPlayer (WaveOut) on a background thread.
+/// Guaranteed fresh stream position on every playback; silent by default.
 /// </summary>
 public static class SoundService
 {
-    private static readonly SoundPlayer? _tickPlayer = CreatePlayer(1000, 50, 0.25);
-    private static readonly SoundPlayer? _togglePlayer = CreatePlayer(1100, 75, 0.35);
-    private static readonly SoundPlayer? _completionPlayer = CreateCompletionPlayer();
+    private static readonly byte[] _tickWav = GenerateWav(new[] { (1000.0, 50) }, 0.45);
+    private static readonly byte[] _toggleWav = GenerateWav(new[] { (1150.0, 75) }, 0.55);
+    private static readonly byte[] _completionWav = GenerateWav(new[] { (784.0, 100), (1046.5, 180) }, 0.55);
 
     public static void PlayTick()
     {
         if (!App.Settings.SoundEnabled) return;
-        PlaySafe(_tickPlayer);
+        PlayWavBytes(_tickWav);
     }
 
     public static void PlayToggleTest()
     {
-        PlaySafe(_togglePlayer);
+        PlayWavBytes(_toggleWav);
     }
 
     public static void PlayCompletion()
     {
         if (!App.Settings.SoundEnabled) return;
-        PlaySafe(_completionPlayer);
+        PlayWavBytes(_completionWav);
     }
 
-    private static void PlaySafe(SoundPlayer? player)
+    private static void PlayWavBytes(byte[] wav)
     {
         ThreadPool.QueueUserWorkItem(_ =>
         {
             try
             {
-                if (player != null)
-                {
-                    player.Play();
-                }
-                else
-                {
-                    SystemSounds.Beep.Play();
-                }
+                using var ms = new MemoryStream(wav);
+                using var player = new SoundPlayer(ms);
+                player.PlaySync();
             }
             catch
             {
-                try { SystemSounds.Beep.Play(); } catch { }
+                try { SystemSounds.Asterisk.Play(); } catch { }
             }
         });
-    }
-
-    private static SoundPlayer? CreatePlayer(double frequency, int durationMs, double volume)
-    {
-        try
-        {
-            byte[] wavBytes = GenerateWav(new[] { (frequency, durationMs) }, volume);
-            var ms = new MemoryStream(wavBytes);
-            var player = new SoundPlayer(ms);
-            player.Load();
-            return player;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static SoundPlayer? CreateCompletionPlayer()
-    {
-        try
-        {
-            byte[] wavBytes = GenerateWav(new[] { (784.0, 100), (1046.5, 180) }, 0.4);
-            var ms = new MemoryStream(wavBytes);
-            var player = new SoundPlayer(ms);
-            player.Load();
-            return player;
-        }
-        catch
-        {
-            return null;
-        }
     }
 
     private static byte[] GenerateWav(IEnumerable<(double freq, int ms)> tones, double volume)

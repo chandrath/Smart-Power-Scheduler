@@ -19,6 +19,7 @@ public partial class CountdownDisplay : UserControl
     private TimerState _currentState = TimerState.Stopped;
 
     public event Action<TimeSpan>? CustomDurationSet;
+    public event Action<TimeSpan>? DurationPreviewChanged;
 
     public CountdownDisplay()
     {
@@ -238,11 +239,27 @@ public partial class CountdownDisplay : UserControl
         TimeEditBox.SelectAll();
     }
 
+    public void CommitIfEditing()
+    {
+        if (TimeEditBox.Visibility == Visibility.Visible)
+        {
+            CommitTimeEdit();
+        }
+    }
+
     private void TimeText_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (_currentState != TimerState.Running)
         {
             StartInlineEdit();
+        }
+    }
+
+    private void TimeEditBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (TryParseDuration(TimeEditBox.Text.Trim(), out var preview))
+        {
+            DurationPreviewChanged?.Invoke(preview);
         }
     }
 
@@ -282,17 +299,55 @@ public partial class CountdownDisplay : UserControl
         TimeText.Visibility = Visibility.Visible;
     }
 
-    private static bool TryParseDuration(string input, out TimeSpan duration)
+    public static bool TryParseDuration(string input, out TimeSpan duration)
     {
         duration = TimeSpan.Zero;
         if (string.IsNullOrWhiteSpace(input)) return false;
+        input = input.Trim().ToLowerInvariant();
 
-        if (TimeSpan.TryParse(input, out var ts) && ts > TimeSpan.Zero)
+        // 1. Colon-separated formats: mm:ss or hh:mm:ss
+        if (input.Contains(':'))
         {
-            duration = ts;
-            return true;
+            var parts = input.Split(':');
+            if (parts.Length == 2 && int.TryParse(parts[0], out int m) && int.TryParse(parts[1], out int s))
+            {
+                if (m >= 0 && s >= 0 && (m > 0 || s > 0))
+                {
+                    duration = TimeSpan.FromMinutes(m) + TimeSpan.FromSeconds(s);
+                    return true;
+                }
+            }
+            else if (parts.Length == 3 && int.TryParse(parts[0], out int h) && int.TryParse(parts[1], out int m3) && int.TryParse(parts[2], out int s3))
+            {
+                if (h >= 0 && m3 >= 0 && s3 >= 0 && (h > 0 || m3 > 0 || s3 > 0))
+                {
+                    duration = TimeSpan.FromHours(h) + TimeSpan.FromMinutes(m3) + TimeSpan.FromSeconds(s3);
+                    return true;
+                }
+            }
         }
 
+        // 2. Unit formats: "90s", "5m", "1h 30m"
+        var matches = System.Text.RegularExpressions.Regex.Matches(input, @"(\d+)\s*([hms])");
+        if (matches.Count > 0)
+        {
+            int totalSeconds = 0;
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                int val = int.Parse(match.Groups[1].Value);
+                string unit = match.Groups[2].Value;
+                if (unit == "h") totalSeconds += val * 3600;
+                else if (unit == "m") totalSeconds += val * 60;
+                else if (unit == "s") totalSeconds += val;
+            }
+            if (totalSeconds > 0)
+            {
+                duration = TimeSpan.FromSeconds(totalSeconds);
+                return true;
+            }
+        }
+
+        // 3. Plain integer: treat as minutes
         if (int.TryParse(input, out int minutes) && minutes > 0)
         {
             duration = TimeSpan.FromMinutes(minutes);

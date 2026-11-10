@@ -26,6 +26,7 @@ public partial class MainWindow : Window
         _timerService.StateChanged += OnTimerStateChanged;
 
         CountdownControl.CustomDurationSet += OnCustomDurationSet;
+        CountdownControl.DurationPreviewChanged += OnDurationPreviewChanged;
 
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
@@ -197,6 +198,16 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnDurationPreviewChanged(TimeSpan preview)
+    {
+        if (_timerService.State == TimerState.Stopped)
+        {
+            _readyDuration = preview;
+            UpdateStartButtonContent();
+            UpdateMinusButtonState(_readyDuration);
+        }
+    }
+
     private void OnSettingsChanged()
     {
         Topmost = App.Settings.AlwaysOnTop;
@@ -297,6 +308,7 @@ public partial class MainWindow : Window
         }
         else
         {
+            CountdownControl.CommitIfEditing();
             _timerService.Start(_readyDuration);
         }
     }
@@ -346,10 +358,6 @@ public partial class MainWindow : Window
         CountdownControl.StartInlineEdit();
     }
 
-    private void ExitButton_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {

@@ -142,7 +142,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Bottom Control Bar: [ ↺ Reset ] [ START / STOP ] [ ✕ Exit ] -->
+                <!-- Bottom Control Bar: [ ↺ Reset ] [ START / STOP ] -->
                 <Border Grid.Row="3"
                         Background="{DynamicResource CardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
@@ -153,7 +153,6 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <!-- Left: Small Round Reset Button -->
@@ -167,10 +166,10 @@
                             <TextBlock Text="↺" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Button>
 
-                        <!-- Center: Primary Big Action Button (Emerald Start / Red Stop) -->
+                        <!-- Primary Big Action Button (Emerald Start / Red Stop) -->
                         <Button x:Name="PrimaryActionButton"
                                 Grid.Column="1"
-                                Margin="14,0"
+                                Margin="12,0,0,0"
                                 Height="46"
                                 Content="START (1m)"
                                 Style="{StaticResource StartButtonStyle}"
@@ -178,17 +177,6 @@
                                 FontWeight="Bold"
                                 Click="PrimaryActionButton_Click"
                                 ToolTip="Start or Stop Countdown" />
-
-                        <!-- Right: Small Round Exit Button -->
-                        <Button x:Name="ExitButton"
-                                Grid.Column="2"
-                                Width="44" Height="44"
-                                Style="{StaticResource FluentButtonStyle}"
-                                Padding="0"
-                                Click="ExitButton_Click"
-                                ToolTip="Exit application">
-                            <TextBlock Text="✕" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Button>
                     </Grid>
                 </Border>
             </Grid>

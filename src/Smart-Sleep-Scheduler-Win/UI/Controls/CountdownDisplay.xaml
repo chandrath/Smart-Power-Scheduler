@@ -79,19 +79,23 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
 
-                        <!-- Inline Edit Box (Appears on click / pencil) -->
+                        <!-- Inline Edit Box: Seamless 56pt typography with subtle accent underline -->
                         <TextBox x:Name="TimeEditBox"
                                  Text="01:00"
-                                 FontSize="38"
+                                 FontSize="56"
                                  FontWeight="Black"
-                                 Width="140"
+                                 FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
+                                 Width="220"
                                  TextAlignment="Center"
+                                 HorizontalAlignment="Center"
                                  VerticalAlignment="Center"
-                                 BorderThickness="1"
+                                 BorderThickness="0,0,0,2"
                                  BorderBrush="{DynamicResource AccentBrush}"
-                                 Background="{DynamicResource CardBackgroundBrush}"
+                                 Background="Transparent"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                 CaretBrush="{DynamicResource AccentBrush}"
                                  Visibility="Collapsed"
+                                 TextChanged="TimeEditBox_TextChanged"
                                  KeyDown="TimeEditBox_KeyDown"
                                  LostFocus="TimeEditBox_LostFocus" />
 
