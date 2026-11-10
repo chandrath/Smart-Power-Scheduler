@@ -11,7 +11,7 @@
   #define MyAppVersion "0.9.0.1"
 #endif
 #ifndef MyPublisher
-  #define MyPublisher "SmartSleep"
+  #define MyPublisher "Appsphinx"
 #endif
 #ifndef MyAppURL
   #define MyAppURL "https://github.com/chandrath/Smart-Sleep-Scheduler"
@@ -37,7 +37,7 @@ AppPublisher={#MyPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\{#MyPublisher}\{#MyAppName}
 DisableProgramGroupPage=yes
 OutputBaseFilename={#OutputBaseFilename}
 OutputDir={#OutputDir}
