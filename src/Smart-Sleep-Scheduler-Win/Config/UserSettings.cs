@@ -53,7 +53,7 @@ public sealed class UserSettings
         WakeUpTitle = defaults.WakeUpTitle;
         WakeUpMessage = defaults.WakeUpMessage;
         PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
-        PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds > 0 ? defaults.PeriodicBlockerScanIntervalSeconds : 30;
+        PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds > 0 ? defaults.PeriodicBlockerScanIntervalSeconds : 5;
         BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
         StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
     }
@@ -86,9 +86,10 @@ public sealed class UserSettings
                         settings.TickTriggerSeconds = 30;
                         needSave = true;
                     }
-                    if (settings.PeriodicBlockerScanIntervalSeconds <= 0)
+                    if (settings.PeriodicBlockerScanIntervalSeconds <= 0 || settings.PeriodicBlockerScanIntervalSeconds == 30)
                     {
-                        settings.PeriodicBlockerScanIntervalSeconds = 30;
+                        settings.PeriodicBlockerScanIntervalSeconds = 5;
+                        settings.PeriodicBlockerScanEnabled = true;
                         needSave = true;
                     }
                     if (needSave)

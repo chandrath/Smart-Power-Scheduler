@@ -85,8 +85,8 @@ public sealed class AppDefaults
     public string WakeUpTitle { get; set; } = "Welcome Back, Sleepyhead! 😴";
     public string WakeUpMessage { get; set; } = "Your PC just enjoyed a refreshing power nap.";
     public int[] BlockerCheckMilestonesSeconds { get; set; } = [900, 300, 60, 30];
-    public bool PeriodicBlockerScanEnabled { get; set; } = false;
-    public int PeriodicBlockerScanIntervalSeconds { get; set; } = 30;
+    public bool PeriodicBlockerScanEnabled { get; set; } = true;
+    public int PeriodicBlockerScanIntervalSeconds { get; set; } = 5;
     public bool BlockerAlertSoundEnabled { get; set; } = true;
     public bool StartupBlockerAlertSoundEnabled { get; set; } = true;
     public string[] KnownSleepBlockerProcesses { get; set; } =

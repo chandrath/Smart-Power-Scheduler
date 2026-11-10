@@ -134,10 +134,13 @@ public partial class SettingsFlyout : UserControl
         PeriodicScanIntervalPanel.Visibility = s.PeriodicBlockerScanEnabled ? Visibility.Visible : Visibility.Collapsed;
         PeriodicScanIntervalCombo.SelectedIndex = s.PeriodicBlockerScanIntervalSeconds switch
         {
-            15 => 0,
-            20 => 1,
-            60 => 3,
-            _ => 2
+            5 => 0,
+            10 => 1,
+            15 => 2,
+            20 => 3,
+            30 => 4,
+            60 => 5,
+            _ => 0
         };
     }
 
@@ -303,10 +306,13 @@ public partial class SettingsFlyout : UserControl
         s.PeriodicBlockerScanEnabled = PeriodicBlockerScanCheck.IsChecked ?? false;
         s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch
         {
-            0 => 15,
-            1 => 20,
-            3 => 60,
-            _ => 30
+            0 => 5,
+            1 => 10,
+            2 => 15,
+            3 => 20,
+            4 => 30,
+            5 => 60,
+            _ => 5
         };
 
         s.Save();

@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         UpdateSoundVisual();
 
         CheckForSleepBlockers(isStartup: true);
+        Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(MemoryService.TrimWorkingSet));
 
         if (App.Settings.AutoStartOnLaunch)
         {
@@ -101,7 +102,7 @@ public partial class MainWindow : Window
                 }
                 else if (App.Settings.PeriodicBlockerScanEnabled)
                 {
-                    int interval = Math.Max(10, App.Settings.PeriodicBlockerScanIntervalSeconds);
+                    int interval = Math.Max(2, App.Settings.PeriodicBlockerScanIntervalSeconds);
                     shouldCheck = (remainingSecs % interval == 0);
                 }
                 else
@@ -473,7 +474,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        if (WindowState == WindowState.Minimized) MemoryService.TrimWorkingSet();
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+        MemoryService.TrimWorkingSet();
+    }
 
     private void CloseWindowButton_Click(object sender, RoutedEventArgs e) => Close();
 }
