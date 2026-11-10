@@ -86,7 +86,7 @@ public partial class CountdownDisplay : UserControl
         }
         else
         {
-            TopHeaderText.Text = $"READY TO {GetActionVerb(action)}";
+            TopHeaderText.Text = "READY TO SCHEDULE";
             InPrefixText.Visibility = Visibility.Collapsed;
             StatusSubText.Text = "Timer Ready";
         }
@@ -200,12 +200,17 @@ public partial class CountdownDisplay : UserControl
         }
     }
 
-    private void TimeText_MouseDown(object sender, MouseButtonEventArgs e)
+    public void StartInlineEdit()
     {
         TimeText.Visibility = Visibility.Collapsed;
         TimeEditBox.Visibility = Visibility.Visible;
         TimeEditBox.Focus();
         TimeEditBox.SelectAll();
+    }
+
+    private void TimeText_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        StartInlineEdit();
     }
 
     private void TimeEditBox_LostFocus(object sender, RoutedEventArgs e)

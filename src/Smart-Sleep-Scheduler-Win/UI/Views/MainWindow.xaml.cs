@@ -95,36 +95,26 @@ public partial class MainWindow : Window
     private void OnTimerTick(TimeSpan remaining, double progressFraction)
     {
         UpdateDisplay(remaining);
+        UpdateMinusButtonState(remaining);
     }
 
     private void OnTimerStateChanged(TimerState state)
     {
         if (state == TimerState.Running)
         {
-            PauseResumeButton.Content = "Pause";
-            PauseResumeButton.IsEnabled = true;
             PrimaryActionButton.Content = "STOP (Esc)";
             PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
             PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
             UpdateDisplay(_timerService.RemainingTime);
-        }
-        else if (state == TimerState.Paused)
-        {
-            PauseResumeButton.Content = "Resume";
-            PauseResumeButton.IsEnabled = true;
-            PrimaryActionButton.Content = "STOP (Esc)";
-            PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
-            PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
-            UpdateDisplay(_timerService.RemainingTime);
+            UpdateMinusButtonState(_timerService.RemainingTime);
         }
         else
         {
-            PauseResumeButton.Content = "Pause";
-            PauseResumeButton.IsEnabled = false;
             PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
             UpdateStartButtonContent();
             UpdateDisplay(_readyDuration);
+            UpdateMinusButtonState(_readyDuration);
         }
     }
 
@@ -132,6 +122,13 @@ public partial class MainWindow : Window
     {
         string label = FormatShortDuration(_readyDuration);
         PrimaryActionButton.Content = $"START ({label})";
+    }
+
+    private void UpdateMinusButtonState(TimeSpan duration)
+    {
+        bool canSubtract = duration.TotalSeconds > 60;
+        MinusOneButton.IsEnabled = canSubtract;
+        MinusOneButton.Opacity = canSubtract ? 1.0 : 0.35;
     }
 
     private static string FormatShortDuration(TimeSpan ts)
@@ -169,7 +166,7 @@ public partial class MainWindow : Window
     private void OnCustomDurationSet(TimeSpan newDuration)
     {
         _readyDuration = newDuration;
-        if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+        if (_timerService.State == TimerState.Running)
         {
             _timerService.Start(newDuration);
         }
@@ -177,6 +174,7 @@ public partial class MainWindow : Window
         {
             UpdateDisplay(_readyDuration);
             UpdateStartButtonContent();
+            UpdateMinusButtonState(_readyDuration);
         }
     }
 
@@ -189,10 +187,12 @@ public partial class MainWindow : Window
             _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
             UpdateStartButtonContent();
             UpdateDisplay(_readyDuration);
+            UpdateMinusButtonState(_readyDuration);
         }
         else
         {
             UpdateDisplay(_timerService.RemainingTime);
+            UpdateMinusButtonState(_timerService.RemainingTime);
         }
     }
 
@@ -250,7 +250,7 @@ public partial class MainWindow : Window
 
     private void PrimaryActionButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+        if (_timerService.State == TimerState.Running)
         {
             _timerService.Stop();
         }
@@ -260,42 +260,65 @@ public partial class MainWindow : Window
         }
     }
 
-    private void PauseResumeButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_timerService.State == TimerState.Running)
-        {
-            _timerService.Pause();
-        }
-        else if (_timerService.State == TimerState.Paused)
-        {
-            _timerService.Resume();
-        }
-    }
-
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
-        _timerService.Start(_readyDuration);
+        if (_timerService.State == TimerState.Running)
+        {
+            _timerService.Start(_readyDuration);
+        }
+        else
+        {
+            UpdateDisplay(_readyDuration);
+            UpdateStartButtonContent();
+            UpdateMinusButtonState(_readyDuration);
+        }
     }
 
-    private void QuickAdjust_Click(object sender, RoutedEventArgs e)
+    private void MinusOneButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string tagStr && int.TryParse(tagStr, out int seconds))
+        if (_timerService.State == TimerState.Stopped)
         {
-            if (_timerService.State == TimerState.Stopped)
+            if (_readyDuration > TimeSpan.FromMinutes(1))
             {
-                var adjusted = _readyDuration.Add(TimeSpan.FromSeconds(seconds));
-                _readyDuration = adjusted >= TimeSpan.FromSeconds(10)
-                    ? adjusted
-                    : TimeSpan.FromSeconds(10);
+                _readyDuration = _readyDuration.Subtract(TimeSpan.FromMinutes(1));
                 UpdateDisplay(_readyDuration);
                 UpdateStartButtonContent();
-            }
-            else
-            {
-                _timerService.AddSeconds(seconds);
+                UpdateMinusButtonState(_readyDuration);
             }
         }
+        else
+        {
+            if (_timerService.RemainingTime > TimeSpan.FromMinutes(1))
+            {
+                _timerService.AddSeconds(-60);
+            }
+        }
+    }
+
+    private void PlusOneButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_timerService.State == TimerState.Stopped)
+        {
+            _readyDuration = _readyDuration.Add(TimeSpan.FromMinutes(1));
+            UpdateDisplay(_readyDuration);
+            UpdateStartButtonContent();
+            UpdateMinusButtonState(_readyDuration);
+        }
+        else
+        {
+            _timerService.AddSeconds(60);
+        }
+    }
+
+    private void PencilButton_Click(object sender, RoutedEventArgs e)
+    {
+        CountdownControl.StartInlineEdit();
+    }
+
+    private void ExitButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -323,7 +346,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (_timerService.State == TimerState.Running || _timerService.State == TimerState.Paused)
+            if (_timerService.State == TimerState.Running)
             {
                 _timerService.Stop();
                 e.Handled = true;
@@ -332,11 +355,6 @@ public partial class MainWindow : Window
         else if (e.Key == Key.F11)
         {
             ToggleFullscreen();
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Space && SettingsOverlay.Visibility != Visibility.Visible && WakeUpOverlay.Visibility != Visibility.Visible)
-        {
-            PauseResumeButton_Click(this, new RoutedEventArgs());
             e.Handled = true;
         }
     }

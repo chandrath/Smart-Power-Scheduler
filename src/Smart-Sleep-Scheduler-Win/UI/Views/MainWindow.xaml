@@ -25,9 +25,9 @@
                     <RowDefinition Height="48" />
                     <!-- Countdown Display Area (Scales in Viewbox) -->
                     <RowDefinition Height="*" />
-                    <!-- Stepper Adjustment Chips (Add & Subtract) -->
+                    <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] -->
                     <RowDefinition Height="Auto" />
-                    <!-- Primary Control Bar (Proportional & Centered) -->
+                    <!-- Bottom Control Bar: [ ↺ Reset ] [ START / STOP ] [ ✕ Exit ] -->
                     <RowDefinition Height="84" />
                 </Grid.RowDefinitions>
 
@@ -97,89 +97,90 @@
                 </Grid>
 
                 <!-- Center: Countdown Ring Display (Scales Responsively in Viewbox) -->
-                <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="16,4,16,10">
+                <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="16,2,16,8">
                     <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <controls:CountdownDisplay x:Name="CountdownControl" />
                     </Viewbox>
                 </Grid>
 
-                <!-- Stepper Chips Row: [ -1m ] [ -2m ] | [ +1m ] [ +5m ] [ +15m ] (MaxWidth=520) -->
-                <Grid Grid.Row="2" HorizontalAlignment="Center" MaxWidth="520" Margin="0,0,0,14">
+                <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] -->
+                <Grid Grid.Row="2" HorizontalAlignment="Center" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <!-- Minus Chips -->
-                        <Button Content="-1m"
+                        <!-- -1m Button (Grayed out & disabled when at 1 min) -->
+                        <Button x:Name="MinusOneButton"
+                                Content="-1m"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="3,0" Padding="10,6"
-                                Click="QuickAdjust_Click" Tag="-60"
+                                Margin="4,0" Padding="14,7"
+                                Click="MinusOneButton_Click"
                                 ToolTip="Subtract 1 minute" />
-                        <Button Content="-2m"
-                                Style="{StaticResource FluentButtonStyle}"
-                                Margin="3,0" Padding="10,6"
-                                Click="QuickAdjust_Click" Tag="-120"
-                                ToolTip="Subtract 2 minutes" />
 
-                        <!-- Subtle Divider -->
-                        <Border Width="1" Height="18" Background="{DynamicResource CardBorderBrush}" Margin="6,0" VerticalAlignment="Center" />
-
-                        <!-- Plus Chips -->
-                        <Button Content="+1m"
+                        <!-- +1m Button -->
+                        <Button x:Name="PlusOneButton"
+                                Content="+1m"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="3,0" Padding="10,6"
-                                Click="QuickAdjust_Click" Tag="60"
+                                Margin="4,0" Padding="14,7"
+                                Click="PlusOneButton_Click"
                                 ToolTip="Add 1 minute" />
-                        <Button Content="+5m"
+
+                        <!-- Pencil Button to Type Custom Duration -->
+                        <Button x:Name="PencilButton"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Margin="3,0" Padding="10,6"
-                                Click="QuickAdjust_Click" Tag="300"
-                                ToolTip="Add 5 minutes" />
-                        <Button Content="+15m"
-                                Style="{StaticResource FluentButtonStyle}"
-                                Margin="3,0" Padding="10,6"
-                                Click="QuickAdjust_Click" Tag="900"
-                                ToolTip="Add 15 minutes" />
+                                Margin="4,0" Padding="0"
+                                Width="40" Height="34"
+                                Click="PencilButton_Click"
+                                ToolTip="Type custom duration">
+                            <TextBlock Text="✏️" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        </Button>
                     </StackPanel>
                 </Grid>
 
-                <!-- Bottom Control Bar (Clustered & Cohesive in Fullscreen) -->
+                <!-- Bottom Control Bar: [ ↺ Reset ] [ START / STOP ] [ ✕ Exit ] -->
                 <Border Grid.Row="3"
                         Background="{DynamicResource CardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
                         BorderThickness="0,1,0,0"
                         CornerRadius="0,0,12,12"
-                        Padding="16,14">
-                    <Grid MaxWidth="520" HorizontalAlignment="Center" Width="380">
+                        Padding="20,14">
+                    <Grid MaxWidth="440" HorizontalAlignment="Center" Width="360">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Pause / Resume Button -->
-                        <Button x:Name="PauseResumeButton"
+                        <!-- Left: Small Round Reset Button -->
+                        <Button x:Name="ResetButton"
                                 Grid.Column="0"
-                                Content="Pause"
+                                Width="44" Height="44"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Click="PauseResumeButton_Click" />
+                                Padding="0"
+                                Click="ResetButton_Click"
+                                ToolTip="Reset to default duration">
+                            <TextBlock Text="↺" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Button>
 
-                        <!-- Primary Dynamic Action Button (Start / Stop) -->
+                        <!-- Center: Primary Big Action Button (Emerald Start / Red Stop) -->
                         <Button x:Name="PrimaryActionButton"
-                                Grid.Column="2"
+                                Grid.Column="1"
+                                Margin="14,0"
+                                Height="46"
                                 Content="START (1m)"
                                 Style="{StaticResource StartButtonStyle}"
-                                FontSize="14"
+                                FontSize="15"
                                 FontWeight="Bold"
                                 Click="PrimaryActionButton_Click"
                                 ToolTip="Start or Stop Countdown" />
 
-                        <!-- Reset Button -->
-                        <Button x:Name="ResetButton"
-                                Grid.Column="4"
-                                Content="Reset"
+                        <!-- Right: Small Round Exit Button -->
+                        <Button x:Name="ExitButton"
+                                Grid.Column="2"
+                                Width="44" Height="44"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Click="ResetButton_Click"
-                                ToolTip="Reset to default duration" />
+                                Padding="0"
+                                Click="ExitButton_Click"
+                                ToolTip="Exit application">
+                            <TextBlock Text="✕" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Button>
                     </Grid>
                 </Border>
             </Grid>
