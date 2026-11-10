@@ -98,7 +98,6 @@ public partial class MainWindow : Window
         if (_timerService.State == TimerState.Running)
         {
             UpdateDisplay(remaining);
-            UpdateMinusButtonState(remaining);
         }
     }
 
@@ -109,13 +108,28 @@ public partial class MainWindow : Window
             PrimaryActionButton.Content = "STOP (Esc)";
             PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
             PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
+
+            // Lock adjustment buttons while running
+            MinusOneButton.IsEnabled = false;
+            MinusOneButton.Opacity = 0.35;
+            PlusOneButton.IsEnabled = false;
+            PlusOneButton.Opacity = 0.35;
+            PencilButton.IsEnabled = false;
+            PencilButton.Opacity = 0.35;
+
             UpdateDisplay(_timerService.RemainingTime);
-            UpdateMinusButtonState(_timerService.RemainingTime);
         }
         else
         {
             PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
+
+            // Unlock adjustment buttons when stopped
+            PlusOneButton.IsEnabled = true;
+            PlusOneButton.Opacity = 1.0;
+            PencilButton.IsEnabled = true;
+            PencilButton.Opacity = 1.0;
+
             UpdateStartButtonContent();
             UpdateDisplay(_readyDuration);
             UpdateMinusButtonState(_readyDuration);
@@ -150,6 +164,7 @@ public partial class MainWindow : Window
 
     private void OnTimerCompleted()
     {
+        SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
         bool ok = PowerService.ExecuteAction(action, out string error);
         if (!ok && !string.IsNullOrWhiteSpace(error))
@@ -205,6 +220,11 @@ public partial class MainWindow : Window
         App.Settings.SoundEnabled = !App.Settings.SoundEnabled;
         App.Settings.Save();
         UpdateSoundVisual();
+
+        if (App.Settings.SoundEnabled)
+        {
+            SoundService.PlayToggleTest();
+        }
     }
 
     private void UpdateSoundVisual()
@@ -298,42 +318,31 @@ public partial class MainWindow : Window
 
     private void MinusOneButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State == TimerState.Stopped)
+        if (_timerService.State != TimerState.Stopped) return;
+
+        if (_readyDuration > TimeSpan.FromMinutes(1))
         {
-            if (_readyDuration > TimeSpan.FromMinutes(1))
-            {
-                _readyDuration = _readyDuration.Subtract(TimeSpan.FromMinutes(1));
-                UpdateDisplay(_readyDuration);
-                UpdateStartButtonContent();
-                UpdateMinusButtonState(_readyDuration);
-            }
-        }
-        else
-        {
-            if (_timerService.RemainingTime > TimeSpan.FromMinutes(1))
-            {
-                _timerService.AddSeconds(-60);
-            }
+            _readyDuration = _readyDuration.Subtract(TimeSpan.FromMinutes(1));
+            UpdateDisplay(_readyDuration);
+            UpdateStartButtonContent();
+            UpdateMinusButtonState(_readyDuration);
         }
     }
 
     private void PlusOneButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State == TimerState.Stopped)
-        {
-            _readyDuration = _readyDuration.Add(TimeSpan.FromMinutes(1));
-            UpdateDisplay(_readyDuration);
-            UpdateStartButtonContent();
-            UpdateMinusButtonState(_readyDuration);
-        }
-        else
-        {
-            _timerService.AddSeconds(60);
-        }
+        if (_timerService.State != TimerState.Stopped) return;
+
+        _readyDuration = _readyDuration.Add(TimeSpan.FromMinutes(1));
+        UpdateDisplay(_readyDuration);
+        UpdateStartButtonContent();
+        UpdateMinusButtonState(_readyDuration);
     }
 
     private void PencilButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_timerService.State != TimerState.Stopped) return;
+
         CountdownControl.StartInlineEdit();
     }
 

@@ -41,16 +41,17 @@
                 <StackPanel VerticalAlignment="Center"
                             HorizontalAlignment="Center">
 
-                    <!-- Line 1: Headline (YOUR PC WILL BE or SMART SLEEP TIMER) -->
+                    <!-- Line 1: Headline (YOUR PC WILL BE - only shown when running!) -->
                     <TextBlock x:Name="TopHeaderText"
-                               Text="YOUR PC WILL BE"
+                               Text=""
                                FontSize="22"
                                FontWeight="Black"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
-                               Margin="0,0,0,2" />
+                               Margin="0,0,0,2"
+                               Visibility="Collapsed" />
 
                     <!-- Line 2: Action Label Pure Typography (No Pill!) -->
                     <TextBlock x:Name="ActionLabelText"

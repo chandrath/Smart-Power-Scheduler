@@ -16,6 +16,7 @@ public partial class CountdownDisplay : UserControl
     private bool _isUrgent;
     private bool _isDotBlinking;
     private int _lastSoundSecond = -1;
+    private TimerState _currentState = TimerState.Stopped;
 
     public event Action<TimeSpan>? CustomDurationSet;
 
@@ -62,6 +63,8 @@ public partial class CountdownDisplay : UserControl
 
     public void UpdateTime(TimeSpan remaining, PowerAction action, TimerState state)
     {
+        _currentState = state;
+
         // 1. Format Time Display
         string formattedTime = remaining.TotalHours >= 1
             ? remaining.ToString(@"hh\:mm\:ss")
@@ -76,10 +79,23 @@ public partial class CountdownDisplay : UserControl
         // 2. Configure Action Typography (Pure Text, No Pill!)
         ConfigureActionTypography(action, state);
 
-        // 3. Status Subtext
-        StatusSubText.Text = state == TimerState.Running
-            ? $"Scheduled {GetActionFriendlyName(action)}"
-            : "Ready to schedule";
+        // 3. Header & Status (Big Header is completely hidden when stopped!)
+        if (state == TimerState.Running)
+        {
+            TopHeaderText.Text = "YOUR PC WILL BE";
+            TopHeaderText.Visibility = Visibility.Visible;
+            StatusSubText.Text = $"Scheduled {GetActionFriendlyName(action)}";
+            TimeText.Cursor = Cursors.Arrow;
+            TimeText.ToolTip = null;
+        }
+        else
+        {
+            TopHeaderText.Text = string.Empty;
+            TopHeaderText.Visibility = Visibility.Collapsed;
+            StatusSubText.Text = "Ready to schedule";
+            TimeText.Cursor = Cursors.Hand;
+            TimeText.ToolTip = "Click to type custom duration";
+        }
 
         // 4. Sound Tick in Final 5 Seconds
         if (state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= 5)
@@ -143,7 +159,8 @@ public partial class CountdownDisplay : UserControl
         }
         else
         {
-            TopHeaderText.Text = "SMART SLEEP TIMER";
+            TopHeaderText.Text = string.Empty;
+            TopHeaderText.Visibility = Visibility.Collapsed;
             ActionLabelText.Text = action switch
             {
                 PowerAction.Sleep => "🌙 Sleep Mode",
@@ -214,6 +231,7 @@ public partial class CountdownDisplay : UserControl
 
     public void StartInlineEdit()
     {
+        if (_currentState == TimerState.Running) return; // Disallow edit while running
         TimeText.Visibility = Visibility.Collapsed;
         TimeEditBox.Visibility = Visibility.Visible;
         TimeEditBox.Focus();
@@ -222,7 +240,10 @@ public partial class CountdownDisplay : UserControl
 
     private void TimeText_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        StartInlineEdit();
+        if (_currentState != TimerState.Running)
+        {
+            StartInlineEdit();
+        }
     }
 
     private void TimeEditBox_LostFocus(object sender, RoutedEventArgs e)
