@@ -89,6 +89,7 @@ public sealed class AppDefaults
     public int PeriodicBlockerScanIntervalSeconds { get; set; } = 5;
     public bool BlockerAlertSoundEnabled { get; set; } = true;
     public bool StartupBlockerAlertSoundEnabled { get; set; } = true;
+    public int MaxHistoryRecords { get; set; } = 100;
     public string[] KnownSleepBlockerProcesses { get; set; } =
     [
         "caffeine", "dontsleep", "powertoys.awake", "mousejiggler", "nosleep", "stayawake", "amphetamine"

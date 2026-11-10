@@ -36,6 +36,7 @@
     "PeriodicBlockerScanIntervalSeconds": 5,
     "BlockerAlertSoundEnabled": true,
     "StartupBlockerAlertSoundEnabled": true,
+    "MaxHistoryRecords": 100,
     "KnownSleepBlockerProcesses": [
       "caffeine",
       "dontsleep",

@@ -66,7 +66,11 @@ public partial class MainWindow : Window
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
-        if (e.Mode == PowerModes.Resume) Dispatcher.Invoke(ShowWakeUpView);
+        if (e.Mode == PowerModes.Resume)
+        {
+            HistoryService.LogSessionResumed(DateTime.Now);
+            Dispatcher.Invoke(ShowWakeUpView);
+        }
     }
 
     private void ShowWakeUpView()
@@ -189,6 +193,7 @@ public partial class MainWindow : Window
         _blockerWarningDismissed = false;
         SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
+        HistoryService.LogSessionTriggered(action, _readyDuration);
         if (!PowerService.ExecuteAction(action, out string error) && !string.IsNullOrWhiteSpace(error))
             MessageBox.Show($"Failed to execute {action}: {error}", "Smart Sleep Scheduler", MessageBoxButton.OK, MessageBoxImage.Warning);
         else if (action == PowerAction.Sleep)

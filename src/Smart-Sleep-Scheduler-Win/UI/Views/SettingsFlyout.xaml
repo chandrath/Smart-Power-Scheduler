@@ -367,6 +367,131 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Section: Session History & Stats -->
+                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Session History &amp; Stats"
+                                           FontWeight="SemiBold"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock x:Name="HistoryTotalStatsText"
+                                           Text="0 sessions recorded"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AccentBrush}" />
+                            </StackPanel>
+                            <Button x:Name="ShareHistoryButton"
+                                    Grid.Column="1"
+                                    Content="📋 Share"
+                                    Padding="8,4"
+                                    FontSize="11"
+                                    Margin="0,0,6,0"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Click="ShareHistoryButton_Click"
+                                    ToolTip="Copy session summary to clipboard" />
+                            <Button x:Name="ClearHistoryButton"
+                                    Grid.Column="2"
+                                    Content="🗑 Clear"
+                                    Padding="6,4"
+                                    FontSize="11"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Click="ClearHistoryButton_Click"
+                                    ToolTip="Clear all session history records" />
+                        </Grid>
+
+                        <TextBlock x:Name="ShareNotificationText"
+                                   Text="✓ Summary copied to clipboard!"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,0,6"
+                                   Visibility="Collapsed" />
+
+                        <TextBlock x:Name="HistoryEmptyNotice"
+                                   Text="No completed power sessions yet. When a countdown completes, your power event is logged here."
+                                   FontSize="11"
+                                   FontStyle="Italic"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   Margin="0,4,0,4" />
+
+                        <ScrollViewer x:Name="HistoryScrollViewer"
+                                      MaxHeight="170"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      Visibility="Collapsed">
+                            <ItemsControl x:Name="HistoryItemsList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource ButtonBackgroundBrush}"
+                                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="10,6"
+                                                Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding ActionIcon}"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding ActionDisplayName}"
+                                                                   FontWeight="SemiBold"
+                                                                   FontSize="11.5"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                                   Margin="0,0,6,0" />
+                                                        <TextBlock Text="{Binding FormattedDuration}"
+                                                                   FontSize="10.5"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding FormattedDate}"
+                                                               FontSize="10"
+                                                               Foreground="{DynamicResource TextMutedBrush}" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <Border Background="{DynamicResource AccentGlowBrush}"
+                                                            CornerRadius="4"
+                                                            Padding="6,2"
+                                                            HorizontalAlignment="Right"
+                                                            Visibility="{Binding SleepDurationVisibility}">
+                                                        <TextBlock Text="{Binding SleepDurationText}"
+                                                                   FontSize="9.5"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource AccentBrush}" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Status}"
+                                                               FontSize="9.5"
+                                                               Foreground="{DynamicResource TextMutedBrush}"
+                                                               HorizontalAlignment="Right"
+                                                               Margin="0,2,0,0" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
                 <!-- Section: About (Single Source of Truth) -->
                 <Border Background="{DynamicResource SolidCardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"

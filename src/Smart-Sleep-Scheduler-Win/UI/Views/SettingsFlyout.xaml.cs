@@ -142,6 +142,8 @@ public partial class SettingsFlyout : UserControl
             60 => 5,
             _ => 0
         };
+
+        RefreshHistoryView();
     }
 
     private void PeriodicBlockerScanCheck_Changed(object sender, RoutedEventArgs e)
@@ -372,6 +374,65 @@ public partial class SettingsFlyout : UserControl
     private void RelaunchAdminButton_Click(object sender, RoutedEventArgs e)
     {
         SleepBlockerService.RelaunchAsAdministrator();
+    }
+
+    private void RefreshHistoryView()
+    {
+        var records = HistoryService.GetHistory();
+        HistoryTotalStatsText.Text = records.Count switch
+        {
+            0 => "0 sessions recorded",
+            1 => "1 session recorded",
+            _ => $"{records.Count} sessions recorded"
+        };
+
+        if (records.Count > 0)
+        {
+            HistoryEmptyNotice.Visibility = Visibility.Collapsed;
+            HistoryScrollViewer.Visibility = Visibility.Visible;
+            HistoryItemsList.ItemsSource = records;
+            ShareHistoryButton.IsEnabled = true;
+            ClearHistoryButton.IsEnabled = true;
+        }
+        else
+        {
+            HistoryEmptyNotice.Visibility = Visibility.Visible;
+            HistoryScrollViewer.Visibility = Visibility.Collapsed;
+            HistoryItemsList.ItemsSource = null;
+            ShareHistoryButton.IsEnabled = false;
+            ClearHistoryButton.IsEnabled = false;
+        }
+    }
+
+    private async void ShareHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string shareText = HistoryService.GenerateShareText();
+            Clipboard.SetText(shareText);
+            ShareNotificationText.Visibility = Visibility.Visible;
+            await Task.Delay(2500);
+            ShareNotificationText.Visibility = Visibility.Collapsed;
+        }
+        catch
+        {
+            // Clipboard access can rarely fail if locked by another app
+        }
+    }
+
+    private void ClearHistoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "Are you sure you want to clear your session history?",
+            "Clear History",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            HistoryService.ClearHistory();
+            RefreshHistoryView();
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
