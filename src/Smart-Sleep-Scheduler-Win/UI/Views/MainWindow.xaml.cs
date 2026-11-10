@@ -94,8 +94,11 @@ public partial class MainWindow : Window
 
     private void OnTimerTick(TimeSpan remaining, double progressFraction)
     {
-        UpdateDisplay(remaining);
-        UpdateMinusButtonState(remaining);
+        if (_timerService.State == TimerState.Running)
+        {
+            UpdateDisplay(remaining);
+            UpdateMinusButtonState(remaining);
+        }
     }
 
     private void OnTimerStateChanged(TimerState state)

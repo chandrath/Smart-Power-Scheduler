@@ -6,7 +6,7 @@
              mc:Ignorable="d"
              d:DesignHeight="330" d:DesignWidth="360">
 
-    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,2">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0">
         <!-- Glowing Urgency Background Circle -->
         <Border x:Name="GlowCircle"
                 Width="290" Height="290"
@@ -26,46 +26,39 @@
                 BorderThickness="1.5">
             <Grid>
                 <!-- Circular Track Background -->
-                <Ellipse Width="242" Height="242"
+                <Ellipse Width="244" Height="244"
                          Stroke="{DynamicResource ButtonBackgroundBrush}"
                          StrokeThickness="9" />
 
                 <!-- Circular Accent Track -->
                 <Ellipse x:Name="ProgressTrackRing"
-                         Width="242" Height="242"
+                         Width="244" Height="244"
                          Stroke="{DynamicResource AccentBrush}"
                          StrokeThickness="3.5"
                          Opacity="0.45" />
 
-                <!-- Header Text Directly Across Top Edge of the Ring -->
-                <Viewbox Stretch="Uniform"
-                         MaxHeight="30"
-                         MaxWidth="250"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Top"
-                         Margin="0,20,0,0">
+                <!-- Unified Single StackPanel: Zero Dead Space, Heavy Bold Lockup -->
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+
+                    <!-- Heavy Bold Headline from Mockup -->
                     <TextBlock x:Name="TopHeaderText"
                                Text="YOUR PC WILL BE"
-                               FontSize="22"
+                               FontSize="27"
                                FontWeight="Black"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                Foreground="{DynamicResource TextPrimaryBrush}"
-                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
-                </Viewbox>
+                               FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
+                               Margin="0,0,0,4" />
 
-                <!-- Center Content: Action Badge, Countdown Digits, Subtitle -->
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Margin="0,26,0,0">
-
-                    <!-- Prominent Action Badge (Closer to Header, Larger) -->
+                    <!-- Prominent Action Badge (Tight 4px Under Header) -->
                     <Border x:Name="ActionBadge"
                             Background="{DynamicResource ButtonBackgroundBrush}"
-                            BorderBrush="{DynamicResource CardBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="15"
-                            Padding="16,6"
+                            BorderBrush="#5538BDF8"
+                            BorderThickness="1.5"
+                            CornerRadius="16"
+                            Padding="18,5"
                             Margin="0,0,0,6"
                             HorizontalAlignment="Center">
                         <TextBlock x:Name="ActionBadgeText"
@@ -76,11 +69,11 @@
                                    FontFamily="Segoe UI Variable Text, Segoe UI" />
                     </Border>
 
-                    <!-- Countdown Digits Row with Optional 'IN ' Prefix & Blinking Live Dot -->
+                    <!-- Countdown Digits Row (IN + 01:00 + Live Dot) -->
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center">
-                        <!-- 'IN ' prefix (visible only when timer running or paused) -->
+                        <!-- 'IN ' prefix -->
                         <TextBlock x:Name="InPrefixText"
                                    Text="IN "
                                    FontSize="22"
@@ -90,7 +83,7 @@
                                    Margin="0,6,4,0"
                                    FontFamily="Segoe UI Variable Display, Segoe UI" />
 
-                        <!-- Big Countdown Digits (Clickable) -->
+                        <!-- Big Countdown Digits -->
                         <TextBlock x:Name="TimeText"
                                    Text="01:00"
                                    FontSize="52"
@@ -101,7 +94,7 @@
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
 
-                        <!-- Inline Edit Box (Appears on click / pencil) -->
+                        <!-- Inline Edit Box (Appears only on click / pencil) -->
                         <TextBox x:Name="TimeEditBox"
                                  Text="01:00"
                                  FontSize="36"
@@ -109,6 +102,10 @@
                                  Width="130"
                                  TextAlignment="Center"
                                  VerticalAlignment="Center"
+                                 BorderThickness="1"
+                                 BorderBrush="{DynamicResource AccentBrush}"
+                                 Background="{DynamicResource CardBackgroundBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
                                  Visibility="Collapsed"
                                  KeyDown="TimeEditBox_KeyDown"
                                  LostFocus="TimeEditBox_LostFocus" />

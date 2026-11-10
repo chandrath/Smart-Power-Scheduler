@@ -75,21 +75,13 @@ public partial class CountdownDisplay : UserControl
         // 2. Configure Action Badge & Theming
         ConfigureActionBadge(action);
 
-        // 3. Format Header and Sub-Status
-        if (state == TimerState.Running || state == TimerState.Paused)
-        {
-            TopHeaderText.Text = "YOUR PC WILL BE";
-            InPrefixText.Visibility = Visibility.Visible;
-            StatusSubText.Text = state == TimerState.Running
-                ? $"Scheduled {GetActionFriendlyName(action)}"
-                : "Countdown Paused";
-        }
-        else
-        {
-            TopHeaderText.Text = "READY TO SCHEDULE";
-            InPrefixText.Visibility = Visibility.Collapsed;
-            StatusSubText.Text = "Timer Ready";
-        }
+        // 3. Format Sub-Status (Header stays punchy: YOUR PC WILL BE)
+        TopHeaderText.Text = "YOUR PC WILL BE";
+        InPrefixText.Visibility = Visibility.Visible;
+
+        StatusSubText.Text = state == TimerState.Running
+            ? $"Scheduled {GetActionFriendlyName(action)}"
+            : "Ready to schedule";
 
         // 4. Live Blinking Dot (< 60s while running)
         bool shouldBlinkDot = state == TimerState.Running && remaining.TotalSeconds > 0 && remaining.TotalSeconds <= 60;
@@ -128,7 +120,7 @@ public partial class CountdownDisplay : UserControl
                 ActionBadgeText.Text = "🌙 SLEEP";
                 ActionBadgeText.Foreground = (Brush)FindResource("AccentBrush");
                 ActionBadge.Background = (Brush)FindResource("ButtonBackgroundBrush");
-                ActionBadge.BorderBrush = (Brush)FindResource("CardBorderBrush");
+                ActionBadge.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 56, 189, 248));
                 ProgressTrackRing.Stroke = (Brush)FindResource("AccentBrush");
                 break;
 
@@ -156,7 +148,7 @@ public partial class CountdownDisplay : UserControl
                 var iceBrush = new SolidColorBrush(Color.FromRgb(147, 197, 253));
                 ActionBadgeText.Foreground = iceBrush;
                 ActionBadge.Background = (Brush)FindResource("ButtonBackgroundBrush");
-                ActionBadge.BorderBrush = (Brush)FindResource("CardBorderBrush");
+                ActionBadge.BorderBrush = new SolidColorBrush(Color.FromArgb(90, 147, 197, 253));
                 ProgressTrackRing.Stroke = iceBrush;
                 break;
         }
@@ -171,15 +163,6 @@ public partial class CountdownDisplay : UserControl
         PowerAction.ForceShutdown => "Force Shutdown",
         PowerAction.ForceRestart => "Force Restart",
         _ => "Sleep"
-    };
-
-    private static string GetActionVerb(PowerAction action) => action switch
-    {
-        PowerAction.Sleep => "SLEEP",
-        PowerAction.Hibernate => "HIBERNATE",
-        PowerAction.Shutdown or PowerAction.ForceShutdown => "SHUT DOWN",
-        PowerAction.Restart or PowerAction.ForceRestart => "RESTART",
-        _ => "SLEEP"
     };
 
     private void SetUrgentState(bool urgent)
@@ -254,14 +237,12 @@ public partial class CountdownDisplay : UserControl
         duration = TimeSpan.Zero;
         if (string.IsNullOrWhiteSpace(input)) return false;
 
-        // Try format mm:ss or hh:mm:ss
         if (TimeSpan.TryParse(input, out var ts) && ts > TimeSpan.Zero)
         {
             duration = ts;
             return true;
         }
 
-        // Try single number (interpreted as minutes)
         if (int.TryParse(input, out int minutes) && minutes > 0)
         {
             duration = TimeSpan.FromMinutes(minutes);
