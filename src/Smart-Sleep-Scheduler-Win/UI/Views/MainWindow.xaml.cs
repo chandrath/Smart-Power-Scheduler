@@ -33,7 +33,7 @@ public partial class MainWindow : Window
         SettingsPanel.Closed += () => SettingsOverlay.Visibility = Visibility.Collapsed;
         SettingsPanel.SettingsChanged += OnSettingsChanged;
         SettingsPanel.HistoryRequested += ShowHistoryView;
-        HistoryControl.Closed += () => HistoryOverlay.Visibility = Visibility.Collapsed;
+        HistoryControl.Closed += OnHistoryClosed;
         WakeUpControl.StartRequested += OnWakeUpStartRequested;
         WakeUpControl.ExitRequested += () => Close();
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -50,6 +50,7 @@ public partial class MainWindow : Window
         UpdatePinVisual();
         UpdateSoundVisual();
 
+        HistoryService.ReconcilePendingStartupSessions();
         CheckForSleepBlockers(isStartup: true);
         Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(MemoryService.TrimWorkingSet));
 
@@ -82,10 +83,25 @@ public partial class MainWindow : Window
         WakeUpOverlay.Visibility = Visibility.Visible;
     }
 
+    private bool _openedHistoryFromSettings;
+
     private void ShowHistoryView()
     {
+        _openedHistoryFromSettings = (SettingsOverlay.Visibility == Visibility.Visible);
+        if (_openedHistoryFromSettings) SettingsOverlay.Visibility = Visibility.Collapsed;
         HistoryControl.RefreshData();
         HistoryOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void OnHistoryClosed()
+    {
+        HistoryOverlay.Visibility = Visibility.Collapsed;
+        if (_openedHistoryFromSettings)
+        {
+            SettingsPanel.LoadValues();
+            SettingsOverlay.Visibility = Visibility.Visible;
+            _openedHistoryFromSettings = false;
+        }
     }
 
     private void OnWakeUpStartRequested(TimeSpan duration)
@@ -139,11 +155,7 @@ public partial class MainWindow : Window
             PrimaryActionButton.Content = "STOP (Esc)";
             PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
             PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
-
-            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = false;
-            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 0.35;
-            GearButton.ToolTip = "Settings locked during active countdown";
-
+            SetSecondaryButtonsState(false);
             UpdateDisplay(_timerService.RemainingTime);
         }
         else if (state == TimerState.Paused)
@@ -151,29 +163,33 @@ public partial class MainWindow : Window
             PrimaryActionButton.Content = "RESUME";
             PrimaryActionButton.Style = (Style)FindResource("AccentButtonStyle");
             PrimaryActionButton.ToolTip = "Resume Countdown";
-
-            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = false;
-            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 0.35;
-
+            SetSecondaryButtonsState(false);
             UpdateDisplay(_timerService.RemainingTime);
         }
         else
         {
             PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
-
-            MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = true;
-            MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = 1.0;
-            GearButton.ToolTip = "Settings";
-
+            SetSecondaryButtonsState(true);
             _blockerWarningDismissed = false;
             BlockerWarningPill.Visibility = Visibility.Collapsed;
             BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-
-            UpdateStartButtonContent();
-            UpdateDisplay(_readyDuration);
-            UpdateMinusButtonState(_readyDuration);
+            RefreshReadyDisplay();
         }
+    }
+
+    private void SetSecondaryButtonsState(bool enabled)
+    {
+        MinusOneButton.IsEnabled = PlusOneButton.IsEnabled = PencilButton.IsEnabled = ResetButton.IsEnabled = GearButton.IsEnabled = enabled;
+        MinusOneButton.Opacity = PlusOneButton.Opacity = PencilButton.Opacity = ResetButton.Opacity = GearButton.Opacity = enabled ? 1.0 : 0.35;
+        GearButton.ToolTip = enabled ? "Settings" : "Settings locked during active countdown";
+    }
+
+    private void RefreshReadyDisplay()
+    {
+        UpdateStartButtonContent();
+        UpdateDisplay(_readyDuration);
+        UpdateMinusButtonState(_readyDuration);
     }
 
     private void UpdateStartButtonContent()
@@ -219,26 +235,13 @@ public partial class MainWindow : Window
     private void OnCustomDurationSet(TimeSpan newDuration)
     {
         _readyDuration = newDuration;
-        if (_timerService.State == TimerState.Running)
-        {
-            _timerService.Start(newDuration);
-        }
-        else
-        {
-            UpdateDisplay(_readyDuration);
-            UpdateStartButtonContent();
-            UpdateMinusButtonState(_readyDuration);
-        }
+        if (_timerService.State == TimerState.Running) _timerService.Start(newDuration);
+        else RefreshReadyDisplay();
     }
 
     private void OnDurationPreviewChanged(TimeSpan preview)
     {
-        if (_timerService.State == TimerState.Stopped)
-        {
-            _readyDuration = preview;
-            UpdateStartButtonContent();
-            UpdateMinusButtonState(_readyDuration);
-        }
+        if (_timerService.State == TimerState.Stopped) { _readyDuration = preview; RefreshReadyDisplay(); }
     }
 
     private void OnSettingsChanged()
@@ -248,9 +251,7 @@ public partial class MainWindow : Window
         if (_timerService.State == TimerState.Stopped)
         {
             _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
-            UpdateStartButtonContent();
-            UpdateDisplay(_readyDuration);
-            UpdateMinusButtonState(_readyDuration);
+            RefreshReadyDisplay();
         }
         else
         {
@@ -404,14 +405,11 @@ public partial class MainWindow : Window
 
     private void CloseBlockerAndResumeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(_currentBlockerName))
-            SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
+        if (!string.IsNullOrWhiteSpace(_currentBlockerName)) SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
         _currentBlockerName = null;
         _blockerWarningDismissed = false;
-        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-        BlockerWarningPill.Visibility = Visibility.Collapsed;
-        if (_timerService.State == TimerState.Paused) _timerService.Resume();
-        else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
+        BlockerDialogOverlay.Visibility = BlockerWarningPill.Visibility = Visibility.Collapsed;
+        ResumeOrStartTimer();
     }
 
     private void DismissBlockerWarningButton_Click(object sender, RoutedEventArgs e)
@@ -419,6 +417,11 @@ public partial class MainWindow : Window
         BlockerDialogOverlay.Visibility = Visibility.Collapsed;
         _blockerWarningDismissed = true;
         BlockerWarningPill.Visibility = Visibility.Visible;
+        ResumeOrStartTimer();
+    }
+
+    private void ResumeOrStartTimer()
+    {
         if (_timerService.State == TimerState.Paused) _timerService.Resume();
         else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
@@ -440,9 +443,7 @@ public partial class MainWindow : Window
     private void AdjustDuration(TimeSpan delta)
     {
         _readyDuration = _readyDuration.Add(delta);
-        UpdateDisplay(_readyDuration);
-        UpdateStartButtonContent();
-        UpdateMinusButtonState(_readyDuration);
+        RefreshReadyDisplay();
     }
 
     private void MinusOneButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped && _readyDuration > TimeSpan.FromMinutes(1)) AdjustDuration(TimeSpan.FromMinutes(-1)); }
@@ -454,7 +455,7 @@ public partial class MainWindow : Window
         if (e.Key == Key.Escape)
         {
             if (BlockerDialogOverlay.Visibility == Visibility.Visible) { BlockerDialogOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
-            if (HistoryOverlay.Visibility == Visibility.Visible) { HistoryOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
+            if (HistoryOverlay.Visibility == Visibility.Visible) { OnHistoryClosed(); e.Handled = true; return; }
             if (WakeUpOverlay.Visibility == Visibility.Visible) { WakeUpOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
             if (SettingsOverlay.Visibility == Visibility.Visible) { SettingsOverlay.Visibility = Visibility.Collapsed; e.Handled = true; return; }
             if (_isFullscreen) { ToggleFullscreen(); e.Handled = true; return; }

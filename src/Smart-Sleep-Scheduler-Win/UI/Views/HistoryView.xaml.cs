@@ -147,6 +147,18 @@ public partial class HistoryView : UserControl
         }
     }
 
+    private void DeleteRecordButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string recordId)
+        {
+            if (HistoryService.DeleteRecord(recordId))
+            {
+                RefreshData();
+                ShowFeedback("Record deleted.");
+            }
+        }
+    }
+
     private void ClearAllButton_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(

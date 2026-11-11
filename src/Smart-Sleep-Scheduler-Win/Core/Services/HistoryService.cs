@@ -73,6 +73,56 @@ public static class HistoryService
         }
     }
 
+    public static void ReconcilePendingStartupSessions()
+    {
+        lock (FileLock)
+        {
+            try
+            {
+                var list = LoadRecordsInternal();
+                bool modified = false;
+                DateTime systemBootTime = DateTime.Now - TimeSpan.FromMilliseconds(Environment.TickCount64);
+
+                foreach (var record in list)
+                {
+                    if (record.WakeUpTimestamp != null) continue; // Already calculated and frozen permanently
+
+                    if (record.Action is PowerAction.Shutdown or PowerAction.ForceShutdown or PowerAction.Restart or PowerAction.ForceRestart or PowerAction.Hibernate)
+                    {
+                        if (systemBootTime > record.Timestamp)
+                        {
+                            record.WakeUpTimestamp = systemBootTime;
+                            record.Status = "Completed";
+                            modified = true;
+                        }
+                    }
+                }
+
+                if (modified) SaveRecordsInternal(list);
+            }
+            catch { }
+        }
+    }
+
+    public static bool DeleteRecord(string recordId)
+    {
+        lock (FileLock)
+        {
+            try
+            {
+                var list = LoadRecordsInternal();
+                int removed = list.RemoveAll(r => r.Id == recordId);
+                if (removed > 0)
+                {
+                    SaveRecordsInternal(list);
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
+
     public static void LogSessionFailed(string recordId, string errorReason)
     {
         lock (FileLock)
@@ -160,7 +210,13 @@ public static class HistoryService
                 totalHours += (r.WakeUpTimestamp.Value - r.Timestamp).TotalHours;
         }
 
-        if (totalHours >= 1)
+        if (totalHours >= 24)
+        {
+            int days = (int)(totalHours / 24);
+            int h = (int)(totalHours % 24);
+            totalSleepTime = h > 0 ? $"{days}d {h}h" : $"{days}d";
+        }
+        else if (totalHours >= 1)
         {
             int h = (int)totalHours;
             int m = (int)((totalHours - h) * 60);
@@ -168,11 +224,11 @@ public static class HistoryService
         }
         else if (totalHours > 0)
         {
-            totalSleepTime = $"{(int)(totalHours * 60)}m";
+            totalSleepTime = $"{Math.Max(1, (int)(totalHours * 60))}m";
         }
         else
         {
-            totalSleepTime = "0h";
+            totalSleepTime = "0m";
         }
     }
 

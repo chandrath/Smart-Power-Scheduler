@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignHeight="550" d:DesignWidth="450">
-    <Border Background="{DynamicResource FlyoutBackgroundBrush}"
+    <Border Background="{DynamicResource SolidPanelBackgroundBrush}"
             BorderBrush="{DynamicResource FlyoutBorderBrush}"
             BorderThickness="1"
             CornerRadius="14"
@@ -106,8 +106,8 @@
                         Padding="8,6"
                         Margin="4,0,0,0">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="Sleep Time" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-                        <TextBlock x:Name="StatSleepTimeText" Text="0h" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Total Rest/Off" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="StatSleepTimeText" Text="0m" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -266,6 +266,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding ActionIcon}"
                                                FontSize="15"
@@ -303,6 +304,17 @@
                                                    HorizontalAlignment="Right"
                                                    Margin="0,2,0,0" />
                                     </StackPanel>
+                                    <Button Grid.Column="3"
+                                            Style="{StaticResource IconButtonStyle}"
+                                            Width="22"
+                                            Height="22"
+                                            Margin="8,0,0,0"
+                                            Click="DeleteRecordButton_Click"
+                                            Tag="{Binding Id}"
+                                            ToolTip="Delete this record"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="✕" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" />
+                                    </Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>

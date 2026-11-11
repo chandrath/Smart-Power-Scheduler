@@ -49,20 +49,44 @@ public sealed class SessionRecord
     }
 
     [JsonIgnore]
-    public string? SleepDurationText
+    public string? DurationBadgeText
     {
         get
         {
             if (WakeUpTimestamp == null || WakeUpTimestamp <= Timestamp) return null;
-            var slept = WakeUpTimestamp.Value - Timestamp;
-            if (slept.TotalHours >= 1) return $"Slept {(int)slept.TotalHours}h {slept.Minutes}m";
-            if (slept.TotalMinutes >= 1) return $"Slept {(int)slept.TotalMinutes}m";
-            return $"Slept {(int)slept.TotalSeconds}s";
+            var elapsed = WakeUpTimestamp.Value - Timestamp;
+            string prefix = Action switch
+            {
+                PowerAction.Sleep => "Slept",
+                PowerAction.Hibernate => "Hibernated",
+                PowerAction.Restart or PowerAction.ForceRestart => "Rebooted in",
+                _ => "Off for"
+            };
+
+            if (Action is PowerAction.Restart or PowerAction.ForceRestart)
+            {
+                if (elapsed.TotalMinutes >= 1) return $"{prefix} {(int)elapsed.TotalMinutes}m {elapsed.Seconds}s";
+                return $"{prefix} {(int)Math.Max(1, elapsed.TotalSeconds)}s";
+            }
+
+            if (elapsed.TotalDays >= 1)
+            {
+                int days = (int)elapsed.TotalDays;
+                int hours = elapsed.Hours;
+                return hours > 0 ? $"{prefix} {days}d {hours}h" : $"{prefix} {days}d";
+            }
+
+            if (elapsed.TotalHours >= 1) return $"{prefix} {(int)elapsed.TotalHours}h {elapsed.Minutes}m";
+            if (elapsed.TotalMinutes >= 1) return $"{prefix} {(int)elapsed.TotalMinutes}m";
+            return $"{prefix} {(int)elapsed.TotalSeconds}s";
         }
     }
 
     [JsonIgnore]
-    public bool HasSleepDuration => !string.IsNullOrEmpty(SleepDurationText);
+    public string? SleepDurationText => DurationBadgeText;
+
+    [JsonIgnore]
+    public bool HasSleepDuration => !string.IsNullOrEmpty(DurationBadgeText);
 
     [JsonIgnore]
     public Visibility SleepDurationVisibility => HasSleepDuration ? Visibility.Visible : Visibility.Collapsed;
