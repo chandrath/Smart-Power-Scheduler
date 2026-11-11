@@ -1,33 +1,24 @@
 @echo off
-title Smart Sleep Scheduler - Dev Runner
 setlocal
-
 cd /d "%~dp0"
-
-echo ========================================================
-echo   Smart Sleep Scheduler - Launching WPF App (.NET 10)
-echo ========================================================
-echo.
 
 where dotnet >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] .NET SDK is not found in PATH.
     echo Please install .NET 10 SDK: https://dotnet.microsoft.com/download
-    echo.
     pause
     exit /b 1
 )
 
-echo Building and starting Smart Sleep Scheduler...
-taskkill /F /IM SmartSleepScheduler.exe >nul 2>&1
-dotnet run --project "%~dp0src\Smart-Sleep-Scheduler-Win\SmartSleepScheduler.csproj"
-
+:: Build if needed (quiet Release build)
+dotnet build "%~dp0src\Smart-Sleep-Scheduler-Win\SmartSleepScheduler.csproj" -c Release --nologo -v q
 if errorlevel 1 (
     echo.
-    echo [ERROR] Application failed to launch or exited with error.
-    echo.
+    echo [ERROR] Build failed. Check the error output above.
     pause
     exit /b 1
 )
 
-endlocal
+:: Launch detached GUI process and close terminal window immediately
+start "" "%~dp0src\Smart-Sleep-Scheduler-Win\bin\Release\net10.0-windows\SmartSleepScheduler.exe"
+exit /b 0
