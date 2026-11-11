@@ -97,26 +97,8 @@ public partial class SettingsFlyout : UserControl
         int vol = s.SoundVolume > 0 ? s.SoundVolume : 50;
         SoundVolumeSlider.Value = vol;
         VolumeValueText.Text = $"{vol}%";
-        SoundSchemeCombo.SelectedIndex = s.SoundScheme switch
-        {
-            "Classic" => 1,
-            "Soft" => 2,
-            _ => 0
-        };
-        TickTimingCombo.SelectedIndex = s.TickTriggerSeconds switch
-        {
-            10 => 0,
-            15 => 1,
-            20 => 2,
-            25 => 3,
-            30 => 4,
-            45 => 5,
-            60 => 6,
-            120 => 7,
-            300 => 8,
-            0 => 9,
-            _ => 4
-        };
+        SoundSchemeCombo.SelectedIndex = s.SoundScheme switch { "Classic" => 1, "Soft" => 2, _ => 0 };
+        TickTimingCombo.SelectedIndex = s.TickTriggerSeconds switch { 10 => 0, 15 => 1, 20 => 2, 25 => 3, 30 => 4, 45 => 5, 60 => 6, 120 => 7, 300 => 8, 0 => 9, _ => 4 };
 
         // Theme
         ThemeCombo.SelectedIndex = (int)s.Theme;
@@ -133,18 +115,10 @@ public partial class SettingsFlyout : UserControl
         BlockerAlertSoundCheck.IsChecked = s.BlockerAlertSoundEnabled;
         PeriodicBlockerScanCheck.IsChecked = s.PeriodicBlockerScanEnabled;
         PeriodicScanIntervalPanel.Visibility = s.PeriodicBlockerScanEnabled ? Visibility.Visible : Visibility.Collapsed;
-        PeriodicScanIntervalCombo.SelectedIndex = s.PeriodicBlockerScanIntervalSeconds switch
-        {
-            5 => 0,
-            10 => 1,
-            15 => 2,
-            20 => 3,
-            30 => 4,
-            60 => 5,
-            _ => 0
-        };
+        PeriodicScanIntervalCombo.SelectedIndex = s.PeriodicBlockerScanIntervalSeconds switch { 5 => 0, 10 => 1, 15 => 2, 20 => 3, 30 => 4, 60 => 5, _ => 0 };
 
         RefreshHistoryView();
+        UpdateShortcutPreview();
     }
 
     private void PeriodicBlockerScanCheck_Changed(object sender, RoutedEventArgs e)
@@ -280,26 +254,8 @@ public partial class SettingsFlyout : UserControl
         s.AlwaysOnTop = AlwaysOnTopCheck.IsChecked ?? true;
         s.SoundEnabled = SoundEnabledCheck.IsChecked ?? false;
         s.SoundVolume = (int)SoundVolumeSlider.Value;
-        s.SoundScheme = SoundSchemeCombo.SelectedIndex switch
-        {
-            1 => "Classic",
-            2 => "Soft",
-            _ => "Modern"
-        };
-        s.TickTriggerSeconds = TickTimingCombo.SelectedIndex switch
-        {
-            0 => 10,
-            1 => 15,
-            2 => 20,
-            3 => 25,
-            4 => 30,
-            5 => 45,
-            6 => 60,
-            7 => 120,
-            8 => 300,
-            9 => 0,
-            _ => 30
-        };
+        s.SoundScheme = SoundSchemeCombo.SelectedIndex switch { 1 => "Classic", 2 => "Soft", _ => "Modern" };
+        s.TickTriggerSeconds = TickTimingCombo.SelectedIndex switch { 0 => 10, 1 => 15, 2 => 20, 3 => 25, 4 => 30, 5 => 45, 6 => 60, 7 => 120, 8 => 300, 9 => 0, _ => 30 };
         s.Theme = (AppTheme)ThemeCombo.SelectedIndex;
         s.SelectedPowerAction = (PowerAction)PowerActionCombo.SelectedIndex;
         s.WakeUpTitle = string.IsNullOrWhiteSpace(WakeUpTitleInput.Text) ? AppConfig.Instance.Defaults.WakeUpTitle : WakeUpTitleInput.Text;
@@ -307,16 +263,7 @@ public partial class SettingsFlyout : UserControl
         s.StartupBlockerAlertSoundEnabled = StartupBlockerSoundCheck.IsChecked ?? true;
         s.BlockerAlertSoundEnabled = BlockerAlertSoundCheck.IsChecked ?? true;
         s.PeriodicBlockerScanEnabled = PeriodicBlockerScanCheck.IsChecked ?? false;
-        s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch
-        {
-            0 => 5,
-            1 => 10,
-            2 => 15,
-            3 => 20,
-            4 => 30,
-            5 => 60,
-            _ => 5
-        };
+        s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch { 0 => 5, 1 => 10, 2 => 15, 3 => 20, 4 => 30, 5 => 60, _ => 5 };
 
         s.Save();
         SettingsChanged?.Invoke();
@@ -441,6 +388,89 @@ public partial class SettingsFlyout : UserControl
     {
         HistoryRequested?.Invoke();
     }
+
+    private bool _userCustomizedShortcutName;
+
+    private void ShortcutBuilder_Changed(object sender, RoutedEventArgs e) => UpdateShortcutPreview();
+    private void ShortcutDurationValueInput_TextChanged(object sender, TextChangedEventArgs e) => UpdateShortcutPreview();
+    private void ShortcutNameInput_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (ShortcutNameInput.IsFocused) _userCustomizedShortcutName = true;
+    }
+
+    private void UpdateShortcutPreview()
+    {
+        if (ShortcutActionCombo == null || ShortcutDurationValueInput == null || ShortcutDurationUnitCombo == null || ShortcutCommandPreviewText == null) return;
+
+        var action = ShortcutActionCombo.SelectedIndex switch
+        {
+            1 => PowerAction.Hibernate,
+            2 => PowerAction.Shutdown,
+            3 => PowerAction.Restart,
+            4 => PowerAction.ForceShutdown,
+            5 => PowerAction.ForceRestart,
+            _ => PowerAction.Sleep
+        };
+
+        int val = int.TryParse(ShortcutDurationValueInput.Text, out int parsedVal) && parsedVal > 0 ? parsedVal : 30;
+        int totalSecs = ComposeSeconds(val, ShortcutDurationUnitCombo.SelectedIndex);
+        var duration = TimeSpan.FromSeconds(Math.Clamp(totalSecs, 1, 43200));
+
+        bool sound = ShortcutSoundCheck?.IsChecked ?? true;
+        string args = CommandLineService.GenerateArguments(action, duration, sound);
+        ShortcutCommandPreviewText.Text = $"SmartSleepScheduler.exe {args}";
+
+        if (!_userCustomizedShortcutName && ShortcutNameInput != null)
+        {
+            string actName = PowerService.GetActionDisplayName(action);
+            string durLabel = FormatDuration(duration);
+            string soundLabel = sound ? "" : " (Muted)";
+            ShortcutNameInput.Text = $"{AppConfig.Instance.App.DisplayName} - {durLabel} {actName}{soundLabel}";
+        }
+    }
+
+    private static string FormatDuration(TimeSpan ts)
+    {
+        if (ts.TotalHours >= 1) return ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h";
+        if (ts.TotalMinutes >= 1) return ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m";
+        return $"{Math.Max(1, (int)ts.TotalSeconds)}s";
+    }
+
+    private async void CreateShortcutButton_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateShortcutPreview();
+        string name = string.IsNullOrWhiteSpace(ShortcutNameInput.Text) ? "Smart Sleep Scheduler" : ShortcutNameInput.Text;
+        string args = ShortcutCommandPreviewText.Text.Replace("SmartSleepScheduler.exe ", "");
+        string desc = $"Smart Sleep Scheduler: {name}";
+
+        if (ShortcutService.CreateDesktopShortcut(name, args, desc, out string error))
+        {
+            ShortcutFeedbackText.Text = $"✓ Created on Desktop: '{name}.lnk'";
+            ShortcutFeedbackPanel.Visibility = Visibility.Visible;
+            await Task.Delay(4000);
+            ShortcutFeedbackPanel.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            MessageBox.Show($"Failed to create shortcut: {error}", "Shortcut Creator", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void CopyCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string fullCommand = $"{ShortcutService.GetExecutablePathQuoted()} {ShortcutCommandPreviewText.Text.Replace("SmartSleepScheduler.exe ", "")}";
+            Clipboard.SetText(fullCommand);
+            ShortcutFeedbackText.Text = "✓ Full path command copied! (Ready for Win+R, scripts, or hotkeys)";
+            ShortcutFeedbackPanel.Visibility = Visibility.Visible;
+            await Task.Delay(3000);
+            ShortcutFeedbackPanel.Visibility = Visibility.Collapsed;
+        }
+        catch { }
+    }
+
+    private void OpenDesktopFolderButton_Click(object sender, RoutedEventArgs e) => ShortcutService.OpenDesktopFolder();
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {

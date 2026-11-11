@@ -5,6 +5,7 @@ using System.Windows.Media;
 using Microsoft.Win32;
 using SmartSleepScheduler.Config;
 using SmartSleepScheduler.Core;
+using SmartSleepScheduler.Core.Models;
 using SmartSleepScheduler.Core.Services;
 
 namespace SmartSleepScheduler.UI.Views;
@@ -18,10 +19,12 @@ public partial class MainWindow : Window
     private bool _blockerWarningDismissed;
     private string? _currentBlockerName;
     private int _lastMilestoneChecked = -1;
+    private readonly LaunchOverrides? _launchOverrides;
 
-    public MainWindow()
+    public MainWindow(LaunchOverrides? overrides = null)
     {
         InitializeComponent();
+        _launchOverrides = overrides;
 
         _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
 
@@ -54,7 +57,11 @@ public partial class MainWindow : Window
         CheckForSleepBlockers(isStartup: true);
         Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(MemoryService.TrimWorkingSet));
 
-        if (App.Settings.AutoStartOnLaunch)
+        if (_launchOverrides != null && _launchOverrides.HasOverrides)
+        {
+            ApplyRuntimeOverrides(_launchOverrides);
+        }
+        else if (App.Settings.AutoStartOnLaunch)
         {
             int launchSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
             _readyDuration = TimeSpan.FromSeconds(launchSeconds);
@@ -326,28 +333,20 @@ public partial class MainWindow : Window
 
     private void PrimaryActionButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerService.State == TimerState.Running)
-        {
-            _timerService.Stop();
-        }
-        else if (_timerService.State == TimerState.Paused)
-        {
-            _timerService.Resume();
-        }
-        else
-        {
-            if (!string.IsNullOrWhiteSpace(_currentBlockerName) && !_blockerWarningDismissed)
-            {
-                ShowBlockerDialog("⚠️ Blocker Detected Before Start");
-                return;
-            }
+        if (_timerService.State == TimerState.Running) { _timerService.Stop(); return; }
+        if (_timerService.State == TimerState.Paused) { _timerService.Resume(); return; }
 
-            CountdownControl.CommitIfEditing();
-            _lastMilestoneChecked = -1;
-            _blockerWarningDismissed = false;
-            _timerService.Start(_readyDuration);
-            CheckForSleepBlockers();
+        if (!string.IsNullOrWhiteSpace(_currentBlockerName) && !_blockerWarningDismissed)
+        {
+            ShowBlockerDialog("⚠️ Blocker Detected Before Start");
+            return;
         }
+
+        CountdownControl.CommitIfEditing();
+        _lastMilestoneChecked = -1;
+        _blockerWarningDismissed = false;
+        _timerService.Start(_readyDuration);
+        CheckForSleepBlockers();
     }
 
     private void CheckForSleepBlockers(bool isStartup = false)
@@ -426,11 +425,7 @@ public partial class MainWindow : Window
         else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
 
-    private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e)
-    {
-        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
-        _timerService.Stop();
-    }
+    private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e) { BlockerDialogOverlay.Visibility = Visibility.Collapsed; _timerService.Stop(); }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {
@@ -440,11 +435,7 @@ public partial class MainWindow : Window
         AdjustDuration(TimeSpan.Zero);
     }
 
-    private void AdjustDuration(TimeSpan delta)
-    {
-        _readyDuration = _readyDuration.Add(delta);
-        RefreshReadyDisplay();
-    }
+    private void AdjustDuration(TimeSpan delta) { _readyDuration = _readyDuration.Add(delta); RefreshReadyDisplay(); }
 
     private void MinusOneButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped && _readyDuration > TimeSpan.FromMinutes(1)) AdjustDuration(TimeSpan.FromMinutes(-1)); }
     private void PlusOneButton_Click(object sender, RoutedEventArgs e) { if (_timerService.State == TimerState.Stopped) AdjustDuration(TimeSpan.FromMinutes(1)); }
@@ -461,24 +452,33 @@ public partial class MainWindow : Window
             if (_isFullscreen) { ToggleFullscreen(); e.Handled = true; return; }
             if (_timerService.State == TimerState.Running) { _timerService.Stop(); e.Handled = true; }
         }
-        else if (e.Key == Key.F11)
+        else if (e.Key == Key.F11) { ToggleFullscreen(); e.Handled = true; }
+    }
+
+    public void ApplyRuntimeOverrides(LaunchOverrides? overrides)
+    {
+        if (overrides == null || !overrides.HasOverrides) return;
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+        if (overrides.Action.HasValue) App.Settings.SelectedPowerAction = overrides.Action.Value;
+        if (overrides.SoundEnabled.HasValue) { App.Settings.SoundEnabled = overrides.SoundEnabled.Value; UpdateSoundVisual(); }
+        if (overrides.SoundVolume.HasValue) App.Settings.SoundVolume = overrides.SoundVolume.Value;
+        if (overrides.Duration.HasValue) _readyDuration = overrides.Duration.Value;
+        _timerService.Stop();
+        RefreshReadyDisplay();
+        if (overrides.AutoStart)
         {
-            ToggleFullscreen();
-            e.Handled = true;
+            _lastMilestoneChecked = -1;
+            _blockerWarningDismissed = false;
+            _timerService.Start(_readyDuration);
+            CheckForSleepBlockers();
         }
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount == 2)
-        {
-            ToggleFullscreen();
-            return;
-        }
-        if (e.ButtonState == MouseButtonState.Pressed && !_isFullscreen)
-        {
-            DragMove();
-        }
+        if (e.ClickCount == 2) { ToggleFullscreen(); return; }
+        if (e.ButtonState == MouseButtonState.Pressed && !_isFullscreen) DragMove();
     }
 
     protected override void OnStateChanged(EventArgs e)
@@ -487,11 +487,6 @@ public partial class MainWindow : Window
         if (WindowState == WindowState.Minimized) MemoryService.TrimWorkingSet();
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-        MemoryService.TrimWorkingSet();
-    }
-
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; MemoryService.TrimWorkingSet(); }
     private void CloseWindowButton_Click(object sender, RoutedEventArgs e) => Close();
 }

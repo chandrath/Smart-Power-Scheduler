@@ -23,6 +23,7 @@ public partial class App : Application
     private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 
     public static UserSettings Settings { get; private set; } = null!;
+    private static CancellationTokenSource? _ipcCancelSource;
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
@@ -30,6 +31,11 @@ public partial class App : Application
         _mutex = new Mutex(true, UniqueAppGuid, out bool isNewInstance);
         if (!isNewInstance)
         {
+            if (e.Args.Length > 0)
+            {
+                IpcService.TrySendToExistingInstance(e.Args);
+            }
+
             try
             {
                 var current = Process.GetCurrentProcess();
@@ -53,22 +59,37 @@ public partial class App : Application
 
         _ownsMutex = true;
 
-        // 2. Initialize Single Source of Truth
+        // 2. Parse Startup CLI Arguments
+        var overrides = CommandLineService.Parse(e.Args);
+
+        // 3. Initialize Single Source of Truth
         _ = AppConfig.Instance;
 
-        // 3. Load User Settings
+        // 4. Load User Settings
         Settings = UserSettings.Load();
 
-        // 4. Apply Theme
+        // 5. Apply Theme
         ThemeService.Instance.ApplyTheme(Settings.Theme);
 
-        // 5. Launch Main Window
-        var mainWindow = new MainWindow();
+        // 6. Launch Main Window with Overrides
+        var mainWindow = new MainWindow(overrides);
         mainWindow.Show();
+
+        // 7. Start Background IPC Listener
+        _ipcCancelSource = new CancellationTokenSource();
+        IpcService.StartServer(args =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var incoming = CommandLineService.Parse(args);
+                mainWindow.ApplyRuntimeOverrides(incoming);
+            });
+        }, _ipcCancelSource.Token);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _ipcCancelSource?.Cancel();
         if (_ownsMutex)
         {
             try

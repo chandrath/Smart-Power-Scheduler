@@ -8,7 +8,7 @@
     "Name": "SmartSleepScheduler",
     "DisplayName": "Smart Sleep Scheduler",
     "Description": "A clean, modern Windows smart sleep timer and power scheduler with Fluent translucent design.",
-    "Version": "0.9.0.1",
+    "Version": "0.9.0.2",
     "Vendor": "Appsphinx",
     "Copyright": "Copyright © 2026 Appsphinx",
     "AppId": "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B",
@@ -31,7 +31,12 @@
     "UrgencyWarningThresholdSeconds": 30,
     "WakeUpTitle": "Welcome Back, Sleepyhead! 😴",
     "WakeUpMessage": "Your PC just enjoyed a refreshing power nap.",
-    "BlockerCheckMilestonesSeconds": [900, 300, 60, 30],
+    "BlockerCheckMilestonesSeconds": [
+      900,
+      300,
+      60,
+      30
+    ],
     "PeriodicBlockerScanEnabled": true,
     "PeriodicBlockerScanIntervalSeconds": 5,
     "BlockerAlertSoundEnabled": true,
@@ -48,4 +53,3 @@
     ]
   }
 }
-

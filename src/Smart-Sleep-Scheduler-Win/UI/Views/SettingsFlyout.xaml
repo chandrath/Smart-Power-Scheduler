@@ -502,6 +502,158 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Section: Desktop Shortcuts & Automation -->
+                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Desktop Shortcuts &amp; Automation"
+                                   FontWeight="SemiBold"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Create 1-click desktop shortcuts with custom power actions and timers."
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,2,0,10" />
+
+                        <!-- Action & Duration Selectors -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2.8*" />
+                                <ColumnDefinition Width="1.8*" />
+                                <ColumnDefinition Width="2.4*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,6,0">
+                                <TextBlock Text="Action" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                                <ComboBox x:Name="ShortcutActionCombo" SelectionChanged="ShortcutBuilder_Changed">
+                                    <ComboBoxItem Content="🌙 Sleep" IsSelected="True" />
+                                    <ComboBoxItem Content="❄️ Hibernate" />
+                                    <ComboBoxItem Content="⚡ Shutdown" />
+                                    <ComboBoxItem Content="🔄 Restart" />
+                                    <ComboBoxItem Content="⚠️ Force Shutdown" />
+                                    <ComboBoxItem Content="⚠️ Force Restart" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                                <TextBlock Text="Duration" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                                <TextBox x:Name="ShortcutDurationValueInput"
+                                         Text="30"
+                                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                                         TextChanged="ShortcutDurationValueInput_TextChanged" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Unit" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                                <ComboBox x:Name="ShortcutDurationUnitCombo" SelectionChanged="ShortcutBuilder_Changed">
+                                    <ComboBoxItem Content="Seconds" />
+                                    <ComboBoxItem Content="Minutes" IsSelected="True" />
+                                    <ComboBoxItem Content="Hours" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Sound Toggle & Shortcut Name -->
+                        <CheckBox x:Name="ShortcutSoundCheck"
+                                  Content="Play alarm sound before action"
+                                  FontSize="11.5"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  IsChecked="True"
+                                  Checked="ShortcutBuilder_Changed"
+                                  Unchecked="ShortcutBuilder_Changed"
+                                  Margin="0,0,0,8" />
+
+                        <TextBlock Text="Shortcut Name" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,3" />
+                        <TextBox x:Name="ShortcutNameInput" Text="30m Sleep" Margin="0,0,0,8" TextChanged="ShortcutNameInput_TextChanged" />
+
+                        <!-- Command Preview Box -->
+                        <Border Background="{DynamicResource ButtonBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8,6"
+                                Margin="0,0,0,10">
+                            <TextBlock x:Name="ShortcutCommandPreviewText"
+                                       Text="SmartSleepScheduler.exe -a sleep -t 30m"
+                                       FontFamily="Consolas, monospace"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+
+                        <!-- Buttons Row -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="CreateShortcutButton"
+                                    Content="✨ Create Desktop Shortcut"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Height="32"
+                                    FontSize="11.5"
+                                    FontWeight="SemiBold"
+                                    Margin="0,0,6,0"
+                                    Click="CreateShortcutButton_Click"
+                                    ToolTip="Places a .lnk shortcut file on your Windows desktop" />
+                            <Button x:Name="CopyCommandButton"
+                                    Grid.Column="1"
+                                    Content="📋 Copy"
+                                    Style="{StaticResource FluentButtonStyle}"
+                                    Height="32"
+                                    Padding="10,2"
+                                    FontSize="11"
+                                    Click="CopyCommandButton_Click"
+                                    ToolTip="Copy command-line arguments to clipboard" />
+                        </Grid>
+
+                        <!-- Shortcut Created Notification feedback & Open Desktop link -->
+                        <Border x:Name="ShortcutFeedbackPanel"
+                                Background="{DynamicResource ButtonBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,8"
+                                Margin="0,0,0,8"
+                                Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="ShortcutFeedbackText"
+                                           Text="✓ Desktop shortcut created successfully!"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource AccentBrush}"
+                                           FontWeight="SemiBold"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,6" />
+                                <Button x:Name="OpenDesktopFolderButton"
+                                        Content="📂 Open Desktop Folder"
+                                        Style="{StaticResource FluentButtonStyle}"
+                                        Height="26"
+                                        Padding="8,2"
+                                        FontSize="10.5"
+                                        HorizontalAlignment="Left"
+                                        Click="OpenDesktopFolderButton_Click"
+                                        ToolTip="Open Windows Desktop in File Explorer" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Collapsible Command-Line Reference Guide -->
+                        <Expander Header="Command-Line Reference Guide"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
+                                  FontSize="11"
+                                  Margin="0,2,0,0">
+                            <StackPanel Margin="0,6,0,0">
+                                <TextBlock Text="Run from terminal, batch file, or custom shortcut:" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,4" />
+                                <TextBlock Text="• -a &lt;action&gt; : sleep, hibernate, shutdown, restart" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,1" />
+                                <TextBlock Text="• -t &lt;duration&gt; : 30m, 1h, 45s, 1h30m, 900" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,1" />
+                                <TextBlock Text="• -s &lt;on|off&gt;  : enable or disable alarm chime" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,1" />
+                                <TextBlock Text="• --no-start    : set duration without auto-running" FontFamily="Consolas, monospace" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,1" />
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </Border>
+
                 <!-- Section: About (Single Source of Truth) -->
                 <Border Background="{DynamicResource SolidCardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
