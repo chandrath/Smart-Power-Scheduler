@@ -85,8 +85,8 @@ public partial class MainWindow : Window
 
     private void ShowWakeUpView()
     {
-        int initialMins = Math.Max(1, App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds / 60 : 1);
-        WakeUpControl.Initialize(App.Settings.WakeUpTitle, App.Settings.WakeUpMessage, initialMins);
+        TimeSpan sessionDuration = _readyDuration > TimeSpan.Zero ? _readyDuration : TimeSpan.FromMinutes(1);
+        WakeUpControl.Initialize(App.Settings.WakeUpTitle, App.Settings.WakeUpMessage, sessionDuration);
         WakeUpOverlay.Visibility = Visibility.Visible;
     }
 

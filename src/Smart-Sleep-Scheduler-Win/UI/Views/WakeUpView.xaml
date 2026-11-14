@@ -14,12 +14,25 @@
                 Padding="24"
                 Width="350">
             <StackPanel HorizontalAlignment="Center">
-                <!-- Colorful Morning Greeting Emoji -->
-                <TextBlock Text="🌅"
-                           FontFamily="Segoe UI Emoji, Noto Color Emoji, sans-serif"
-                           FontSize="46"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,10" />
+                <!-- Glowing Sunrise Badge (High-Contrast Amber/Gold) -->
+                <Border Width="60" Height="60"
+                        CornerRadius="30"
+                        Background="#25F59E0B"
+                        BorderBrush="#4DF59E0B"
+                        BorderThickness="1.5"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,12">
+                    <Viewbox Width="32" Height="32">
+                        <Canvas Width="24" Height="24">
+                            <!-- Sun Rays and Horizon Line -->
+                            <Path Stroke="#F59E0B" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M12 2v4M4.93 6.93l2.83 2.83M19.07 6.93l-2.83 2.83M2 16h2M20 16h2M2 20h20M7 16a5 5 0 0 1 10 0" />
+                            <!-- Rising Sun Semi-Circle -->
+                            <Path Fill="#F59E0B" Opacity="0.85"
+                                  Data="M7 16a5 5 0 0 1 10 0Z" />
+                        </Canvas>
+                    </Viewbox>
+                </Border>
 
                 <!-- Welcome Title -->
                 <TextBlock x:Name="TitleText"
