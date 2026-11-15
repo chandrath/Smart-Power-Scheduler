@@ -93,11 +93,19 @@ end;
 
 function IsStreamDeckInstalled(): Boolean;
 begin
-  Result := DirExists(ExpandConstant('{userappdata}\Elgato\StreamDeck')) or
+  Result := FileExists(ExpandConstant('{commonpf64}\Elgato\StreamDeck\StreamDeck.exe')) or
             FileExists(ExpandConstant('{commonpf}\Elgato\StreamDeck\StreamDeck.exe')) or
             FileExists(ExpandConstant('{autopf}\Elgato\StreamDeck\StreamDeck.exe')) or
-            FileExists(ExpandConstant('{commonpf32}\Elgato\StreamDeck\StreamDeck.exe'));
+            FileExists(ExpandConstant('{commonpf32}\Elgato\StreamDeck\StreamDeck.exe')) or
+            FileExists(ExpandConstant('{localappdata}\Programs\Elgato\StreamDeck\StreamDeck.exe')) or
+            RegKeyExists(HKCU, 'Software\Elgato Systems GmbH\StreamDeck') or
+            RegKeyExists(HKLM, 'Software\Elgato Systems GmbH\StreamDeck') or
+            RegKeyExists(HKLM64, 'Software\Elgato Systems GmbH\StreamDeck') or
+            IsProcessRunning('StreamDeck.exe');
 end;
+
+var
+  StreamDeckAutoConfigured: Boolean;
 
 procedure TaskKillStreamDeckPlugin();
 var
@@ -114,15 +122,35 @@ begin
   Sleep(1000);
 end;
 
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpSelectComponents) and (not StreamDeckAutoConfigured) then
+  begin
+    StreamDeckAutoConfigured := True;
+    if IsStreamDeckInstalled() then
+    begin
+      WizardSelectComponents('main,streamdeck');
+      WizardForm.TypesCombo.ItemIndex := 0;
+    end
+    else
+    begin
+      WizardSelectComponents('main');
+      WizardForm.TypesCombo.ItemIndex := 1;
+    end;
+  end;
+end;
+
 procedure InitializeWizard();
 begin
   if IsStreamDeckInstalled() then
   begin
     WizardSelectComponents('main,streamdeck');
+    WizardForm.TypesCombo.ItemIndex := 0;
   end
   else
   begin
     WizardSelectComponents('main');
+    WizardForm.TypesCombo.ItemIndex := 1;
   end;
 end;
 
