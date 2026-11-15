@@ -53,6 +53,9 @@ ArchitecturesInstallIn64BitMode=x64
 ArchitecturesAllowed=x64
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+CloseApplications=yes
+CloseApplicationsFilter=SmartSleepScheduler.exe,SmartSleepScheduler.StreamDeck.exe
+RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -181,34 +184,37 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   PluginDir: String;
+  ResultCode: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
-    TaskKillStreamDeckPlugin();
+    // Kill app processes only (never touch StreamDeck.exe here)
+    Exec('taskkill.exe', '/F /IM SmartSleepScheduler.exe /IM SmartSleepScheduler.StreamDeck.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(500);
   end
   else if CurUninstallStep = usPostUninstall then
   begin
     PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin');
     if DirExists(PluginDir) then
-    begin
       DelTree(PluginDir, True, True, True);
-    end;
   end;
 end;
 
 function InitializeUninstall(): Boolean;
 var
   PluginDir: String;
+  ResultCode: Integer;
 begin
   PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin');
-  TaskKillStreamDeckPlugin();
 
+  // Kill plugin subprocess silently first
+  Exec('taskkill.exe', '/F /IM SmartSleepScheduler.StreamDeck.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+  // Prompt if Stream Deck itself is running and plugin dir exists
   if DirExists(PluginDir) and IsProcessRunning('StreamDeck.exe') then
   begin
     if MsgBox('Elgato Stream Deck is currently running. It must be closed to cleanly remove the Stream Deck plugin files. Would you like the uninstaller to close Stream Deck automatically?', mbConfirmation, MB_YESNO) = IDYES then
-    begin
-      CloseStreamDeckApp();
-    end
+      Exec('taskkill.exe', '/F /IM StreamDeck.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
     else
     begin
       MsgBox('Uninstallation cannot cleanly proceed while Elgato Stream Deck is running. Please close Stream Deck and try again.', mbError, MB_OK);
@@ -217,5 +223,19 @@ begin
     end;
   end;
 
+  // Prompt if the main app is running
+  if IsProcessRunning('SmartSleepScheduler.exe') then
+  begin
+    if MsgBox('Smart Sleep Scheduler is currently running. It must be closed to complete uninstallation. Close it automatically?', mbConfirmation, MB_YESNO) = IDYES then
+      Exec('taskkill.exe', '/F /IM SmartSleepScheduler.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+    else
+    begin
+      MsgBox('Uninstallation cannot proceed while Smart Sleep Scheduler is running. Please close it and try again.', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end;
+
+  Sleep(500);
   Result := True;
 end;
