@@ -151,8 +151,7 @@ public static class Program
     private static void HandleWillAppear(string context, JsonNode? payload)
     {
         var cfg = ParseKeyConfig(payload?["settings"]);
-        string? title = payload?["title"]?.GetValue<string>();
-        if (!string.IsNullOrWhiteSpace(title)) cfg.CustomTitle = title;
+        if (payload?["title"]?.GetValue<string>() is { } t && !string.IsNullOrWhiteSpace(t)) cfg.CustomTitle = t;
         _keys[context] = cfg;
         Log($"WillAppear context={context}, action={cfg.Action}, duration={cfg.Duration}");
         UpdateKeyDisplay(context, cfg, _lastState);
@@ -161,8 +160,7 @@ public static class Program
     private static void HandleDidReceiveSettings(string context, JsonNode? payload)
     {
         var cfg = ParseKeyConfig(payload?["settings"]);
-        if (_keys.TryGetValue(context, out var existing) && !string.IsNullOrWhiteSpace(existing.CustomTitle))
-            cfg.CustomTitle = existing.CustomTitle;
+        if (_keys.TryGetValue(context, out var existing) && !string.IsNullOrWhiteSpace(existing.CustomTitle)) cfg.CustomTitle = existing.CustomTitle;
         _keys[context] = cfg;
         Log($"DidReceiveSettings context={context}, action={cfg.Action}, duration={cfg.Duration}");
         UpdateKeyDisplay(context, cfg, _lastState);
@@ -170,11 +168,9 @@ public static class Program
 
     private static void HandleTitleParametersDidChange(string context, JsonNode? payload)
     {
-        if (_keys.TryGetValue(context, out var cfg))
-        {
-            cfg.CustomTitle = payload?["title"]?.GetValue<string>();
-            UpdateKeyDisplay(context, cfg, _lastState);
-        }
+        if (!_keys.TryGetValue(context, out var cfg)) return;
+        cfg.CustomTitle = payload?["title"]?.GetValue<string>();
+        UpdateKeyDisplay(context, cfg, _lastState);
     }
 
     private static KeyConfig ParseKeyConfig(JsonNode? settings)
@@ -189,7 +185,10 @@ public static class Program
         {
             string d = settings["duration"]!.ToString().Trim();
             if (!string.IsNullOrEmpty(d))
-                cfg.Duration = char.IsDigit(d[^1]) ? $"{d}m" : d;
+            {
+                d = char.IsDigit(d[^1]) ? $"{d}m" : d;
+                cfg.Duration = ClampDurationString(d);
+            }
         }
 
         if (settings["sound"] != null && bool.TryParse(settings["sound"]!.ToString(), out bool snd))
@@ -332,9 +331,7 @@ public static class Program
             Path.Combine(baseDir, "..", "..", "SmartSleepScheduler.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Appsphinx", "Smart Sleep Scheduler", "SmartSleepScheduler.exe"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Appsphinx", "Smart Sleep Scheduler", "SmartSleepScheduler.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Appsphinx", "Smart Sleep Scheduler", "SmartSleepScheduler.exe"),
-            @"C:\GitHub\_2026\Smart-Sleep-Scheduler\src\Smart-Sleep-Scheduler-Win\bin\Release\net10.0-windows\SmartSleepScheduler.exe",
-            @"C:\GitHub\_2026\Smart-Sleep-Scheduler\src\Smart-Sleep-Scheduler-Win\bin\Debug\net10.0-windows\SmartSleepScheduler.exe"
+            @"C:\GitHub\_2026\Smart-Sleep-Scheduler\src\Smart-Sleep-Scheduler-Win\bin\Release\net10.0-windows\SmartSleepScheduler.exe"
         ];
 
         foreach (var c in candidates)
@@ -418,29 +415,25 @@ public static class Program
 
         if (state.State == "Running")
         {
-            bool isShutdown = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase);
-            imgKey = isShutdown ? "running_shutdown" : "running_sleep";
+            bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
+            imgKey = isPower ? "running_shutdown" : "running_sleep";
 
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
             if (isMatchingAction || _keys.Count == 1)
             {
                 string targetAct = FormatActionShort(state.Action);
-                title = $"{FormatDuration(state.RemainingSeconds)}\n{targetAct}\nSTOP";
+                title = $"{FormatDuration(state.RemainingSeconds)}\n{targetAct}";
             }
             else
             {
-                title = $"{config.Duration}\n{actShort}\n(RUN)";
+                title = $"{config.Duration}\n{actShort}";
             }
-        }
-        else if (state.State == "Paused")
-        {
-            imgKey = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) ? "idle_shutdown" : "idle_sleep";
-            title = $"PAUSED\n{actShort}";
         }
         else
         {
-            imgKey = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) ? "idle_shutdown" : "idle_sleep";
-            title = !string.IsNullOrWhiteSpace(config.CustomTitle) ? $"{config.CustomTitle}\n{config.Duration}" : $"{config.Duration}\n{actShort}";
+            bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
+            imgKey = isPower ? "idle_shutdown" : "idle_sleep";
+            title = state.State == "Paused" ? $"PAUSED\n{actShort}" : (!string.IsNullOrWhiteSpace(config.CustomTitle) ? $"{config.CustomTitle}\n{config.Duration}" : $"{config.Duration}\n{actShort}");
         }
 
         if (config.LastAppliedImageKey != imgKey && _imageBase64.TryGetValue(imgKey, out var b64))
@@ -450,6 +443,16 @@ public static class Program
         }
 
         SetTitle(context, title);
+    }
+
+    private static string ClampDurationString(string raw)
+    {
+        int sec = 0;
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(raw, @"(\d+)\s*([hms])", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            if (int.TryParse(m.Groups[1].Value, out int v)) sec += m.Groups[2].Value.ToLowerInvariant() switch { "h" => Math.Min(v, 12) * 3600, "m" => v * 60, _ => v };
+        if (sec <= 0) sec = 30;
+        if (sec > 43200) sec = 43200;
+        return (sec >= 3600 && sec % 3600 == 0) ? $"{sec / 3600}h" : ((sec >= 60 && sec % 60 == 0) ? $"{sec / 60}m" : $"{sec}s");
     }
 
     private static string FormatActionShort(string action)
@@ -467,16 +470,14 @@ public static class Program
 
     private static void SetTitle(string context, string title)
     {
-        if (_ws?.State != WebSocketState.Open) return;
-        var msg = JsonSerializer.Serialize(new { @event = "setTitle", context, payload = new { title, target = 0 } });
-        _ = SendWebSocketMessageAsync(msg, CancellationToken.None);
+        if (_ws?.State == WebSocketState.Open)
+            _ = SendWebSocketMessageAsync(JsonSerializer.Serialize(new { @event = "setTitle", context, payload = new { title, target = 0 } }), CancellationToken.None);
     }
 
     private static void SetImage(string context, string base64)
     {
-        if (_ws?.State != WebSocketState.Open) return;
-        var msg = JsonSerializer.Serialize(new { @event = "setImage", context, payload = new { image = $"data:image/png;base64,{base64}", target = 0 } });
-        _ = SendWebSocketMessageAsync(msg, CancellationToken.None);
+        if (_ws?.State == WebSocketState.Open)
+            _ = SendWebSocketMessageAsync(JsonSerializer.Serialize(new { @event = "setImage", context, payload = new { image = $"data:image/png;base64,{base64}", target = 0 } }), CancellationToken.None);
     }
 
     private static async Task SendWebSocketMessageAsync(string json, CancellationToken ct)

@@ -58,6 +58,32 @@ function initFormValues() {
     soundCheckbox.checked = settings.sound !== undefined ? (settings.sound === true) : true;
 }
 
+function sanitizeDuration(val) {
+    if (!val) return "30s";
+    var str = val.toString().trim().toLowerCase();
+    var sec = 0;
+    var hm = str.match(/(\d+)\s*h/);
+    var mm = str.match(/(\d+)\s*m/);
+    var sm = str.match(/(\d+)\s*s/);
+    if (hm) sec += parseInt(hm[1], 10) * 3600;
+    if (mm) sec += parseInt(mm[1], 10) * 60;
+    if (sm) sec += parseInt(sm[1], 10);
+    if (!hm && !mm && !sm) {
+        var n = parseInt(str, 10);
+        if (!isNaN(n)) sec = n <= 12 ? n * 3600 : (n <= 720 ? n * 60 : n);
+    }
+    if (isNaN(sec) || sec < 5) sec = 5;
+    if (sec > 43200) sec = 43200; // 12 hours max
+    if (sec % 3600 === 0 && sec >= 3600) return (sec / 3600) + "h";
+    if (sec % 60 === 0 && sec >= 60) return (sec / 60) + "m";
+    if (sec < 60) return sec + "s";
+    var h = Math.floor(sec / 3600), rem = sec % 3600, m = Math.floor(rem / 60), s = rem % 60, res = "";
+    if (h > 0) res += h + "h ";
+    if (m > 0) res += m + "m ";
+    if (s > 0) res += s + "s";
+    return res.trim();
+}
+
 function saveSettings() {
     if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
 
@@ -68,7 +94,8 @@ function saveSettings() {
 
     var duration = "30s";
     if (presetSelect.value === "custom") {
-        duration = customInput.value.trim() || "30s";
+        duration = sanitizeDuration(customInput.value);
+        customInput.value = duration;
     } else {
         duration = presetSelect.value;
     }

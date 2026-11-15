@@ -33,7 +33,7 @@
         {
           "Image": "images/actionIcon",
           "TitleAlignment": "middle",
-          "FontSize": 10,
+          "FontSize": 14,
           "FontStyle": "Bold",
           "TitleColor": "#FFFFFF"
         }
