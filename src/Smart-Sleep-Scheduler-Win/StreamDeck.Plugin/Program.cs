@@ -415,7 +415,7 @@ public static class Program
 
         if (state.State == "Running")
         {
-            bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("lock", StringComparison.OrdinalIgnoreCase);
+            bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "running_shutdown" : "running_sleep";
 
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
@@ -431,7 +431,7 @@ public static class Program
         }
         else
         {
-            bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("lock", StringComparison.OrdinalIgnoreCase);
+            bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "idle_shutdown" : "idle_sleep";
             title = state.State == "Paused" ? $"PAUSED\n{actShort}" : $"{config.Duration}\n{actShort}";
         }
@@ -450,7 +450,7 @@ public static class Program
         int sec = 0;
         foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(raw, @"(\d+)\s*([hms])", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
             if (int.TryParse(m.Groups[1].Value, out int v)) sec += m.Groups[2].Value.ToLowerInvariant() switch { "h" => Math.Min(v, 12) * 3600, "m" => v * 60, _ => v };
-        if (sec <= 0) sec = 30;
+        if (sec <= 0) sec = 10;
         if (sec > 43200) sec = 43200;
         return (sec >= 3600 && sec % 3600 == 0) ? $"{sec / 3600}h" : ((sec >= 60 && sec % 60 == 0) ? $"{sec / 60}m" : $"{sec}s");
     }
@@ -491,7 +491,7 @@ public static class Program
 public sealed class KeyConfig
 {
     public string Action { get; set; } = "Sleep";
-    public string Duration { get; set; } = "30s";
+    public string Duration { get; set; } = "10s";
     public bool SoundEnabled { get; set; } = true;
     public string? CustomTitle { get; set; }
     public string? LastAppliedImageKey { get; set; }

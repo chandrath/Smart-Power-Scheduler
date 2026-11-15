@@ -39,7 +39,7 @@ function initFormValues() {
         actionSelect.value = settings.action;
     }
 
-    var rawDur = settings.duration !== undefined ? settings.duration.toString().trim() : "30s";
+    var rawDur = settings.duration !== undefined ? settings.duration.toString().trim() : "10s";
     if (/^\d+$/.test(rawDur)) {
         rawDur = rawDur + "m";
     }
