@@ -80,6 +80,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin"
+
 [Code]
 function IsProcessRunning(const ExeName: String): Boolean;
 var
@@ -148,15 +151,43 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  PluginDir: String;
 begin
   if CurUninstallStep = usUninstall then
   begin
     TaskKillStreamDeckPlugin();
+  end
+  else if CurUninstallStep = usPostUninstall then
+  begin
+    PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin');
+    if DirExists(PluginDir) then
+    begin
+      DelTree(PluginDir, True, True, True);
+    end;
   end;
 end;
 
 function InitializeUninstall(): Boolean;
+var
+  PluginDir: String;
 begin
+  PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin');
   TaskKillStreamDeckPlugin();
+
+  if DirExists(PluginDir) and IsProcessRunning('StreamDeck.exe') then
+  begin
+    if MsgBox('Elgato Stream Deck is currently running. It must be closed to cleanly remove the Stream Deck plugin files. Would you like the uninstaller to close Stream Deck automatically?', mbConfirmation, MB_YESNO) = IDYES then
+    begin
+      CloseStreamDeckApp();
+    end
+    else
+    begin
+      MsgBox('Uninstallation cannot cleanly proceed while Elgato Stream Deck is running. Please close Stream Deck and try again.', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end;
+
   Result := True;
 end;
