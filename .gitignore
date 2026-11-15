@@ -8,6 +8,7 @@
 *.suo
 *.userosscache
 *.sln.docstates
+*_wpftmp.*
 
 ## Build outputs & Publish artifacts
 artifacts/

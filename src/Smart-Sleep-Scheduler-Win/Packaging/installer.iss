@@ -58,13 +58,13 @@ PrivilegesRequiredOverridesAllowed=dialog
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Types]
-Name: "full"; Description: "Full installation (Includes Stream Deck integration)"
 Name: "compact"; Description: "Compact installation (Application only)"
+Name: "full"; Description: "Full installation (Includes Stream Deck integration)"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Components]
 Name: "main"; Description: "Sleep Timer Application (Required)"; Types: full compact custom; Flags: fixed
-Name: "streamdeck"; Description: "Elgato Stream Deck Integration (Optional)"; Types: full
+Name: "streamdeck"; Description: "Elgato Stream Deck Integration (Optional)"; Types: full; Flags: disablenouninstallwarning
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -129,13 +129,13 @@ begin
     StreamDeckAutoConfigured := True;
     if IsStreamDeckInstalled() then
     begin
+      WizardForm.TypesCombo.ItemIndex := 1;
       WizardSelectComponents('main,streamdeck');
-      WizardForm.TypesCombo.ItemIndex := 0;
     end
     else
     begin
+      WizardForm.TypesCombo.ItemIndex := 0;
       WizardSelectComponents('main');
-      WizardForm.TypesCombo.ItemIndex := 1;
     end;
   end;
 end;
@@ -145,12 +145,12 @@ begin
   if IsStreamDeckInstalled() then
   begin
     WizardSelectComponents('main,streamdeck');
-    WizardForm.TypesCombo.ItemIndex := 0;
+    WizardForm.TypesCombo.ItemIndex := 1;
   end
   else
   begin
     WizardSelectComponents('main');
-    WizardForm.TypesCombo.ItemIndex := 1;
+    WizardForm.TypesCombo.ItemIndex := 0;
   end;
 end;
 
