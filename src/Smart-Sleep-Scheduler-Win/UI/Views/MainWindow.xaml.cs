@@ -218,18 +218,17 @@ public partial class MainWindow : Window
         MinusOneButton.Opacity = canSubtract ? 1.0 : 0.35;
     }
 
-    private static string FormatShortDuration(TimeSpan ts)
-    {
-        if (ts.TotalHours >= 1) return ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h";
-        if (ts.TotalMinutes >= 1) return ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m";
-        return $"{Math.Max(1, (int)ts.TotalSeconds)}s";
-    }
+    private static string FormatShortDuration(TimeSpan ts) =>
+        ts.TotalHours >= 1 ? (ts.Minutes > 0 ? $"{(int)ts.TotalHours}h {ts.Minutes}m" : $"{(int)ts.TotalHours}h") :
+        ts.TotalMinutes >= 1 ? (ts.Seconds > 0 ? $"{(int)ts.TotalMinutes}m {ts.Seconds}s" : $"{(int)ts.TotalMinutes}m") :
+        $"{Math.Max(1, (int)ts.TotalSeconds)}s";
 
     private void OnTimerCompleted()
     {
         _blockerWarningDismissed = false;
         SoundService.PlayCompletion();
         var action = App.Settings.SelectedPowerAction;
+        IpcService.BroadcastState(TimerStateSnapshot.Completed(action.ToString()));
         string recordId = HistoryService.LogSessionTriggered(action, _readyDuration);
         if (!PowerService.ExecuteAction(action, out string error) && !string.IsNullOrWhiteSpace(error))
         {

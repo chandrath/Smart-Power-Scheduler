@@ -19,6 +19,8 @@ public static class Program
     private static ClientWebSocket? _ws;
     private static TimerStateSnapshot _lastState = TimerStateSnapshot.Stopped();
     private static string? _cachedExePath;
+    private static DateTime _completionUntil = DateTime.MinValue;
+    private static string _completedAction = "Sleep";
     private static readonly Dictionary<string, string> _imageBase64 = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task Main(string[] args)
@@ -367,6 +369,13 @@ public static class Program
                     var snapshot = JsonSerializer.Deserialize<TimerStateSnapshot>(line);
                     if (snapshot != null)
                     {
+                        if (snapshot.State == "Completed" || (_lastState.State == "Running" && snapshot.State == "Stopped" && _lastState.RemainingSeconds <= 2))
+                        {
+                            _completionUntil = DateTime.UtcNow.AddSeconds(3);
+                            _completedAction = string.IsNullOrEmpty(snapshot.Action) ? _lastState.Action : snapshot.Action;
+                            foreach (var k in _keys.Keys) ShowOk(k);
+                            _ = Task.Run(async () => { await Task.Delay(3100); UpdateAllKeysDisplay(); });
+                        }
                         _lastState = snapshot;
                         UpdateAllKeysDisplay();
                     }
@@ -392,8 +401,7 @@ public static class Program
     private static void PreloadImageAssets()
     {
         string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        string[] candidates = [Path.Combine(baseDir, "images"), Path.Combine(baseDir, "com.appsphinx.smartsleepscheduler.sdPlugin", "images")];
-        string? imgDir = candidates.FirstOrDefault(Directory.Exists);
+        string? imgDir = new[] { Path.Combine(baseDir, "images"), Path.Combine(baseDir, "com.appsphinx.smartsleepscheduler.sdPlugin", "images") }.FirstOrDefault(Directory.Exists);
         if (imgDir == null) return;
         foreach (var name in (string[])["idle_sleep", "idle_shutdown", "running_sleep", "running_shutdown"])
         {
@@ -413,7 +421,14 @@ public static class Program
         string title;
         string imgKey;
 
-        if (state.State == "Running")
+        if (DateTime.UtcNow < _completionUntil)
+        {
+            string compAct = FormatActionShort(_completedAction);
+            title = $"{compAct}\nDONE";
+            bool isPower = _completedAction.Contains("shut", StringComparison.OrdinalIgnoreCase) || _completedAction.Contains("restart", StringComparison.OrdinalIgnoreCase);
+            imgKey = isPower ? "idle_shutdown" : "idle_sleep";
+        }
+        else if (state.State == "Running")
         {
             bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "running_shutdown" : "running_sleep";
@@ -433,7 +448,7 @@ public static class Program
         {
             bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "idle_shutdown" : "idle_sleep";
-            title = state.State == "Paused" ? $"PAUSED\n{actShort}" : $"{config.Duration}\n{actShort}";
+            title = state.State == "Paused" ? $"{actShort}\nPAUSED" : $"{config.Duration}\n{actShort}";
         }
 
         if (config.LastAppliedImageKey != imgKey && _imageBase64.TryGetValue(imgKey, out var b64))
@@ -455,44 +470,29 @@ public static class Program
         return (sec >= 3600 && sec % 3600 == 0) ? $"{sec / 3600}h" : ((sec >= 60 && sec % 60 == 0) ? $"{sec / 60}m" : $"{sec}s");
     }
 
-    private static string FormatActionShort(string action)
-    {
-        string c = action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "");
-        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", "lock" => "LOCK", _ => action.ToUpperInvariant() };
-    }
+    private static string FormatActionShort(string action) =>
+        action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "") switch
+        { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", "lock" => "LOCK", _ => action.ToUpperInvariant() };
 
-    private static string FormatDuration(int totalSeconds)
-    {
-        if (totalSeconds >= 3600) return $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m";
-        if (totalSeconds >= 60) return $"{totalSeconds / 60}:{totalSeconds % 60:D2}";
-        return $"{Math.Max(1, totalSeconds)}s";
-    }
+    private static string FormatDuration(int totalSeconds) =>
+        totalSeconds >= 3600 ? $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m" :
+        totalSeconds >= 60 ? $"{totalSeconds / 60}:{totalSeconds % 60:D2}" : $"{Math.Max(1, totalSeconds)}s";
 
-    private static void SetTitle(string context, string title)
-    {
-        if (_ws?.State == WebSocketState.Open)
-            _ = SendWebSocketMessageAsync(JsonSerializer.Serialize(new { @event = "setTitle", context, payload = new { title, target = 0 } }), CancellationToken.None);
-    }
-
-    private static void SetImage(string context, string base64)
-    {
-        if (_ws?.State == WebSocketState.Open)
-            _ = SendWebSocketMessageAsync(JsonSerializer.Serialize(new { @event = "setImage", context, payload = new { image = $"data:image/png;base64,{base64}", target = 0 } }), CancellationToken.None);
-    }
+    private static void ShowOk(string context) => SendEvent(new { @event = "showOk", context });
+    private static void SetTitle(string context, string title) => SendEvent(new { @event = "setTitle", context, payload = new { title, target = 0 } });
+    private static void SetImage(string context, string base64) => SendEvent(new { @event = "setImage", context, payload = new { image = $"data:image/png;base64,{base64}", target = 0 } });
+    private static void SendEvent(object payload) { if (_ws?.State == WebSocketState.Open) _ = SendWebSocketMessageAsync(JsonSerializer.Serialize(payload), CancellationToken.None); }
 
     private static async Task SendWebSocketMessageAsync(string json, CancellationToken ct)
     {
         if (_ws?.State != WebSocketState.Open) return;
-        byte[] bytes = Encoding.UTF8.GetBytes(json);
-        try { await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct); } catch { }
+        try { await _ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(json)), WebSocketMessageType.Text, true, ct); } catch { }
     }
 }
 
 public sealed class KeyConfig
 {
-    public string Action { get; set; } = "Sleep";
-    public string Duration { get; set; } = "10s";
-    public bool SoundEnabled { get; set; } = true;
-    public string? CustomTitle { get; set; }
+    public string Action { get; set; } = "Sleep"; public string Duration { get; set; } = "10s";
+    public bool SoundEnabled { get; set; } = true; public string? CustomTitle { get; set; }
     public string? LastAppliedImageKey { get; set; }
 }

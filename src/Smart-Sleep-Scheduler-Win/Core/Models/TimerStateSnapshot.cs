@@ -33,4 +33,12 @@ public sealed class TimerStateSnapshot
         RemainingSeconds = remainingSeconds,
         TotalSeconds = totalSeconds
     };
+
+    public static TimerStateSnapshot Completed(string action = "Sleep") => new()
+    {
+        State = "Completed",
+        Action = action,
+        RemainingSeconds = 0,
+        TotalSeconds = 0
+    };
 }
