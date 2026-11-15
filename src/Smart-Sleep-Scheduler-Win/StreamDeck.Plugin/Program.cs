@@ -433,7 +433,7 @@ public static class Program
         {
             bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "idle_shutdown" : "idle_sleep";
-            title = state.State == "Paused" ? $"PAUSED\n{actShort}" : (!string.IsNullOrWhiteSpace(config.CustomTitle) ? $"{config.CustomTitle}\n{config.Duration}" : $"{config.Duration}\n{actShort}");
+            title = state.State == "Paused" ? $"PAUSED\n{actShort}" : $"{config.Duration}\n{actShort}";
         }
 
         if (config.LastAppliedImageKey != imgKey && _imageBase64.TryGetValue(imgKey, out var b64))
@@ -458,7 +458,7 @@ public static class Program
     private static string FormatActionShort(string action)
     {
         string c = action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "");
-        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBERN", "shutdown" => "SHUTDOWN", "restart" => "RESTART", "forceshutdown" => "F-SHUT", "forcerestart" => "F-RESTART", _ => action.ToUpperInvariant() };
+        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", _ => action.ToUpperInvariant() };
     }
 
     private static string FormatDuration(int totalSeconds)

@@ -29,11 +29,12 @@
         "Keypad"
       ],
       "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
       "States": [
         {
           "Image": "images/actionIcon",
           "TitleAlignment": "middle",
-          "FontSize": 14,
+          "FontSize": 12,
           "FontStyle": "Bold",
           "TitleColor": "#FFFFFF"
         }
