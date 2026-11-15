@@ -55,7 +55,7 @@ function initFormValues() {
         customInput.value = rawDur || "30s";
     }
 
-    soundCheckbox.checked = (settings.sound === true);
+    soundCheckbox.checked = settings.sound !== undefined ? (settings.sound === true) : true;
 }
 
 function saveSettings() {

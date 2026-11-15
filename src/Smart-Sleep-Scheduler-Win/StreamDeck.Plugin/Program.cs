@@ -19,10 +19,12 @@ public static class Program
     private static ClientWebSocket? _ws;
     private static TimerStateSnapshot _lastState = TimerStateSnapshot.Stopped();
     private static string? _cachedExePath;
+    private static readonly Dictionary<string, string> _imageBase64 = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task Main(string[] args)
     {
         Log($"Started with args: {string.Join(" ", args)}");
+        PreloadImageAssets();
 
         int port = 0;
         string? pluginUuid = null;
@@ -390,21 +392,35 @@ public static class Program
         }
     }
 
+    private static void PreloadImageAssets()
+    {
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string[] candidates = [Path.Combine(baseDir, "images"), Path.Combine(baseDir, "com.appsphinx.smartsleepscheduler.sdPlugin", "images")];
+        string? imgDir = candidates.FirstOrDefault(Directory.Exists);
+        if (imgDir == null) return;
+        foreach (var name in (string[])["idle_sleep", "idle_shutdown", "running_sleep", "running_shutdown"])
+        {
+            string p = Path.Combine(imgDir, $"{name}.png");
+            if (File.Exists(p)) try { _imageBase64[name] = Convert.ToBase64String(File.ReadAllBytes(p)); } catch { }
+        }
+    }
+
     private static void UpdateAllKeysDisplay()
     {
-        foreach (var kvp in _keys)
-        {
-            UpdateKeyDisplay(kvp.Key, kvp.Value, _lastState);
-        }
+        foreach (var kvp in _keys) UpdateKeyDisplay(kvp.Key, kvp.Value, _lastState);
     }
 
     private static void UpdateKeyDisplay(string context, KeyConfig config, TimerStateSnapshot state)
     {
         string actShort = FormatActionShort(config.Action);
         string title;
+        string imgKey;
 
         if (state.State == "Running")
         {
+            bool isShutdown = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase);
+            imgKey = isShutdown ? "running_shutdown" : "running_sleep";
+
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
             if (isMatchingAction || _keys.Count == 1)
             {
@@ -418,13 +434,19 @@ public static class Program
         }
         else if (state.State == "Paused")
         {
+            imgKey = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) ? "idle_shutdown" : "idle_sleep";
             title = $"PAUSED\n{actShort}";
         }
         else
         {
-            title = !string.IsNullOrWhiteSpace(config.CustomTitle)
-                ? $"{config.CustomTitle}\n{config.Duration}"
-                : $"{config.Duration}\n{actShort}";
+            imgKey = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) ? "idle_shutdown" : "idle_sleep";
+            title = !string.IsNullOrWhiteSpace(config.CustomTitle) ? $"{config.CustomTitle}\n{config.Duration}" : $"{config.Duration}\n{actShort}";
+        }
+
+        if (config.LastAppliedImageKey != imgKey && _imageBase64.TryGetValue(imgKey, out var b64))
+        {
+            config.LastAppliedImageKey = imgKey;
+            SetImage(context, b64);
         }
 
         SetTitle(context, title);
@@ -432,38 +454,34 @@ public static class Program
 
     private static string FormatActionShort(string action)
     {
-        string clean = action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "");
-        return clean switch
-        {
-            "sleep" => "SLEEP",
-            "hibernate" => "HIBERN",
-            "shutdown" => "SHUTDOWN",
-            "restart" => "RESTART",
-            "forceshutdown" => "F-SHUT",
-            "forcerestart" => "F-RESTART",
-            _ => action.ToUpperInvariant()
-        };
+        string c = action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "");
+        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBERN", "shutdown" => "SHUTDOWN", "restart" => "RESTART", "forceshutdown" => "F-SHUT", "forcerestart" => "F-RESTART", _ => action.ToUpperInvariant() };
     }
 
     private static string FormatDuration(int totalSeconds)
     {
-        if (totalSeconds >= 3600)
-            return $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m";
-        if (totalSeconds >= 60)
-            return $"{totalSeconds / 60}:{totalSeconds % 60:D2}";
+        if (totalSeconds >= 3600) return $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m";
+        if (totalSeconds >= 60) return $"{totalSeconds / 60}:{totalSeconds % 60:D2}";
         return $"{Math.Max(1, totalSeconds)}s";
     }
 
     private static void SetTitle(string context, string title)
     {
-        if (_ws == null || _ws.State != WebSocketState.Open) return;
+        if (_ws?.State != WebSocketState.Open) return;
         var msg = JsonSerializer.Serialize(new { @event = "setTitle", context, payload = new { title, target = 0 } });
+        _ = SendWebSocketMessageAsync(msg, CancellationToken.None);
+    }
+
+    private static void SetImage(string context, string base64)
+    {
+        if (_ws?.State != WebSocketState.Open) return;
+        var msg = JsonSerializer.Serialize(new { @event = "setImage", context, payload = new { image = $"data:image/png;base64,{base64}", target = 0 } });
         _ = SendWebSocketMessageAsync(msg, CancellationToken.None);
     }
 
     private static async Task SendWebSocketMessageAsync(string json, CancellationToken ct)
     {
-        if (_ws == null || _ws.State != WebSocketState.Open) return;
+        if (_ws?.State != WebSocketState.Open) return;
         byte[] bytes = Encoding.UTF8.GetBytes(json);
         try { await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct); } catch { }
     }
@@ -473,6 +491,7 @@ public sealed class KeyConfig
 {
     public string Action { get; set; } = "Sleep";
     public string Duration { get; set; } = "30s";
-    public bool SoundEnabled { get; set; } = false;
+    public bool SoundEnabled { get; set; } = true;
     public string? CustomTitle { get; set; }
+    public string? LastAppliedImageKey { get; set; }
 }
