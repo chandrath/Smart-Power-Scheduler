@@ -727,6 +727,28 @@
                                         ToolTip="Restart app with Administrator elevation" />
                             </Grid>
                         </Border>
+
+                        <!-- Elgato Stream Deck Integration Status -->
+                        <Border Background="{DynamicResource ButtonBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,8"
+                                Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock x:Name="StreamDeckStatusText"
+                                           Text="● Elgato Stream Deck: Installed &amp; Ready"
+                                           FontSize="11.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock x:Name="StreamDeckDescText"
+                                           Text="Plugin detected. Control countdowns directly from your keypad."
+                                           FontSize="10"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
 

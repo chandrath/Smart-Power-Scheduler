@@ -29,22 +29,28 @@
                 <div class="sdpi-item-label">Timer Duration</div>
                 <div class="sdpi-item-value">
                     <select id="presetSelect">
-                        <option value="5">5 Minutes</option>
-                        <option value="15">15 Minutes</option>
-                        <option value="30" selected>30 Minutes (Recommended)</option>
-                        <option value="45">45 Minutes</option>
-                        <option value="60">1 Hour (60m)</option>
-                        <option value="120">2 Hours (120m)</option>
-                        <option value="180">3 Hours (180m)</option>
+                        <option value="10s">10 Seconds (Quick Test)</option>
+                        <option value="30s" selected>30 Seconds (Default)</option>
+                        <option value="1m">1 Minute</option>
+                        <option value="2m">2 Minutes</option>
+                        <option value="5m">5 Minutes</option>
+                        <option value="10m">10 Minutes</option>
+                        <option value="15m">15 Minutes</option>
+                        <option value="30m">30 Minutes</option>
+                        <option value="45m">45 Minutes</option>
+                        <option value="1h">1 Hour</option>
+                        <option value="2h">2 Hours</option>
+                        <option value="3h">3 Hours</option>
+                        <option value="4h">4 Hours</option>
                         <option value="custom">Custom Duration...</option>
                     </select>
                 </div>
             </div>
 
             <div class="sdpi-item" id="customDurationRow" style="display: none; margin-top: 8px;">
-                <div class="sdpi-item-label">Custom Duration (Minutes)</div>
+                <div class="sdpi-item-label">Custom Duration</div>
                 <div class="sdpi-item-value">
-                    <input type="number" id="customDurationInput" min="1" max="720" value="30" />
+                    <input type="text" id="customDurationInput" placeholder="e.g. 45s, 20m, 1h" value="30s" />
                 </div>
             </div>
         </div>

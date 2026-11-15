@@ -56,6 +56,6 @@
     "ActionTimerUUID": "com.appsphinx.smartsleepscheduler.action.timer",
     "PluginName": "Smart Sleep Scheduler",
     "DefaultAction": "Sleep",
-    "DefaultDurationMinutes": 30
+    "DefaultDuration": "30s"
   }
 }

@@ -77,6 +77,7 @@ public partial class SettingsFlyout : UserControl
             AdminStatusText.Foreground = (System.Windows.Media.Brush)FindResource("StartBrush");
             RelaunchAdminButton.Content = "Active";
         }
+        UpdateStreamDeckStatus();
 
         // Defaults duration
         DecomposeSeconds(s.DefaultTimerDurationSeconds, out int defVal, out int defUnitIdx);
@@ -471,6 +472,15 @@ public partial class SettingsFlyout : UserControl
     }
 
     private void OpenDesktopFolderButton_Click(object sender, RoutedEventArgs e) => ShortcutService.OpenDesktopFolder();
+
+    private void UpdateStreamDeckStatus()
+    {
+        string p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin");
+        bool ok = Directory.Exists(p);
+        StreamDeckStatusText.Text = ok ? "● Elgato Stream Deck: Installed & Ready" : "○ Elgato Stream Deck: Not Installed";
+        StreamDeckStatusText.Foreground = ok ? (System.Windows.Media.Brush)FindResource("StartBrush") : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+        StreamDeckDescText.Text = ok ? "Plugin detected. Control countdowns directly from your keypad." : "Run Setup installer to enable the Stream Deck integration.";
+    }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {

@@ -39,16 +39,20 @@ function initFormValues() {
         actionSelect.value = settings.action;
     }
 
-    var dur = settings.duration !== undefined ? parseInt(settings.duration, 10) : 30;
-    var presets = ["5", "15", "30", "45", "60", "120", "180"];
+    var rawDur = settings.duration !== undefined ? settings.duration.toString().trim() : "30s";
+    if (/^\d+$/.test(rawDur)) {
+        rawDur = rawDur + "m";
+    }
 
-    if (presets.indexOf(dur.toString()) !== -1) {
-        presetSelect.value = dur.toString();
+    var presets = ["10s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "45m", "1h", "2h", "3h", "4h"];
+
+    if (presets.indexOf(rawDur) !== -1) {
+        presetSelect.value = rawDur;
         customRow.style.display = "none";
     } else {
         presetSelect.value = "custom";
         customRow.style.display = "flex";
-        customInput.value = dur > 0 ? dur : 30;
+        customInput.value = rawDur || "30s";
     }
 
     soundCheckbox.checked = (settings.sound === true);
@@ -62,13 +66,11 @@ function saveSettings() {
     var customInput = document.getElementById("customDurationInput");
     var soundCheckbox = document.getElementById("soundCheckbox");
 
-    var duration = 30;
+    var duration = "30s";
     if (presetSelect.value === "custom") {
-        duration = parseInt(customInput.value, 10);
-        if (isNaN(duration) || duration < 1) duration = 1;
-        if (duration > 720) duration = 720;
+        duration = customInput.value.trim() || "30s";
     } else {
-        duration = parseInt(presetSelect.value, 10);
+        duration = presetSelect.value;
     }
 
     var newSettings = {

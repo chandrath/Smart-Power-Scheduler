@@ -105,6 +105,7 @@ public sealed class StreamDeckConfig
     public string ActionTimerUUID { get; set; } = "com.appsphinx.smartsleepscheduler.action.timer";
     public string PluginName { get; set; } = "Smart Sleep Scheduler";
     public string DefaultAction { get; set; } = "Sleep";
+    public string DefaultDuration { get; set; } = "30s";
     public int DefaultDurationMinutes { get; set; } = 30;
 }
 

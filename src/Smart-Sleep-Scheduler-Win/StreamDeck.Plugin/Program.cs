@@ -130,6 +130,10 @@ public static class Program
                         HandleDidReceiveSettings(context, payload);
                         break;
 
+                    case "titleParametersDidChange":
+                        HandleTitleParametersDidChange(context, payload);
+                        break;
+
                     case "keyDown":
                         await HandleKeyDownAsync(context, ct);
                         break;
@@ -145,17 +149,30 @@ public static class Program
     private static void HandleWillAppear(string context, JsonNode? payload)
     {
         var cfg = ParseKeyConfig(payload?["settings"]);
+        string? title = payload?["title"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(title)) cfg.CustomTitle = title;
         _keys[context] = cfg;
-        Log($"WillAppear context={context}, action={cfg.Action}, duration={cfg.DurationMinutes}m");
+        Log($"WillAppear context={context}, action={cfg.Action}, duration={cfg.Duration}");
         UpdateKeyDisplay(context, cfg, _lastState);
     }
 
     private static void HandleDidReceiveSettings(string context, JsonNode? payload)
     {
         var cfg = ParseKeyConfig(payload?["settings"]);
+        if (_keys.TryGetValue(context, out var existing) && !string.IsNullOrWhiteSpace(existing.CustomTitle))
+            cfg.CustomTitle = existing.CustomTitle;
         _keys[context] = cfg;
-        Log($"DidReceiveSettings context={context}, action={cfg.Action}, duration={cfg.DurationMinutes}m");
+        Log($"DidReceiveSettings context={context}, action={cfg.Action}, duration={cfg.Duration}");
         UpdateKeyDisplay(context, cfg, _lastState);
+    }
+
+    private static void HandleTitleParametersDidChange(string context, JsonNode? payload)
+    {
+        if (_keys.TryGetValue(context, out var cfg))
+        {
+            cfg.CustomTitle = payload?["title"]?.GetValue<string>();
+            UpdateKeyDisplay(context, cfg, _lastState);
+        }
     }
 
     private static KeyConfig ParseKeyConfig(JsonNode? settings)
@@ -168,15 +185,13 @@ public static class Program
 
         if (settings["duration"] != null)
         {
-            if (int.TryParse(settings["duration"]!.ToString(), out int dur) && dur > 0)
-                cfg.DurationMinutes = dur;
+            string d = settings["duration"]!.ToString().Trim();
+            if (!string.IsNullOrEmpty(d))
+                cfg.Duration = char.IsDigit(d[^1]) ? $"{d}m" : d;
         }
 
-        if (settings["sound"] != null)
-        {
-            if (bool.TryParse(settings["sound"]!.ToString(), out bool snd))
-                cfg.SoundEnabled = snd;
-        }
+        if (settings["sound"] != null && bool.TryParse(settings["sound"]!.ToString(), out bool snd))
+            cfg.SoundEnabled = snd;
 
         return cfg;
     }
@@ -184,7 +199,7 @@ public static class Program
     private static async Task HandleKeyDownAsync(string context, CancellationToken ct)
     {
         if (!_keys.TryGetValue(context, out var config)) config = new KeyConfig();
-        Log($"KeyDown context={context}, Action={config.Action}, Duration={config.DurationMinutes}m, CurrentState={_lastState.State}");
+        Log($"KeyDown context={context}, Action={config.Action}, Duration={config.Duration}, CurrentState={_lastState.State}");
 
         // Case A: Timer is already running -> pressing button STOPS the countdown
         if (_lastState.State == "Running")
@@ -195,9 +210,8 @@ public static class Program
         }
 
         // Case B: Timer is stopped -> start requested action
-        string durationArg = $"{config.DurationMinutes}m";
         string soundArg = config.SoundEnabled ? "on" : "off";
-        string[] startArgs = ["-a", config.Action.ToLowerInvariant(), "-t", durationArg, "-s", soundArg, "--start"];
+        string[] startArgs = ["-a", config.Action.ToLowerInvariant(), "-t", config.Duration, "-s", soundArg, "--start"];
 
         Log($"Attempting to send start command to running instance: {string.Join(" ", startArgs)}");
         if (!SendCommandToApp(startArgs))
@@ -392,16 +406,14 @@ public static class Program
         if (state.State == "Running")
         {
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
-
             if (isMatchingAction || _keys.Count == 1)
             {
-                // Active countdown on matching key
-                title = $"{FormatDuration(state.RemainingSeconds)}\nSTOP";
+                string targetAct = FormatActionShort(state.Action);
+                title = $"{FormatDuration(state.RemainingSeconds)}\n{targetAct}\nSTOP";
             }
             else
             {
-                // Inactive keys show subtle running indicator while keeping preset
-                title = $"{config.DurationMinutes}m\n{actShort}\n(RUN)";
+                title = $"{config.Duration}\n{actShort}\n(RUN)";
             }
         }
         else if (state.State == "Paused")
@@ -410,8 +422,9 @@ public static class Program
         }
         else
         {
-            // Crisp idle preset display (e.g. "1m\nFORCE\nRESTART")
-            title = $"{config.DurationMinutes}m\n{actShort}";
+            title = !string.IsNullOrWhiteSpace(config.CustomTitle)
+                ? $"{config.CustomTitle}\n{config.Duration}"
+                : $"{config.Duration}\n{actShort}";
         }
 
         SetTitle(context, title);
@@ -423,10 +436,10 @@ public static class Program
         return clean switch
         {
             "sleep" => "SLEEP",
-            "hibernate" => "HIBERNATE",
+            "hibernate" => "HIBERN",
             "shutdown" => "SHUTDOWN",
             "restart" => "RESTART",
-            "forceshutdown" => "F-SHUTDOWN",
+            "forceshutdown" => "F-SHUT",
             "forcerestart" => "F-RESTART",
             _ => action.ToUpperInvariant()
         };
@@ -435,37 +448,16 @@ public static class Program
     private static string FormatDuration(int totalSeconds)
     {
         if (totalSeconds >= 3600)
-        {
-            int h = totalSeconds / 3600;
-            int m = (totalSeconds % 3600) / 60;
-            return m > 0 ? $"{h}h {m}m" : $"{h}h";
-        }
-
+            return $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m";
         if (totalSeconds >= 60)
-        {
-            int m = totalSeconds / 60;
-            int s = totalSeconds % 60;
-            return $"{m}:{s:D2}";
-        }
-
+            return $"{totalSeconds / 60}:{totalSeconds % 60:D2}";
         return $"{Math.Max(1, totalSeconds)}s";
     }
 
     private static void SetTitle(string context, string title)
     {
         if (_ws == null || _ws.State != WebSocketState.Open) return;
-
-        var msg = JsonSerializer.Serialize(new
-        {
-            @event = "setTitle",
-            context,
-            payload = new
-            {
-                title,
-                target = 0
-            }
-        });
-
+        var msg = JsonSerializer.Serialize(new { @event = "setTitle", context, payload = new { title, target = 0 } });
         _ = SendWebSocketMessageAsync(msg, CancellationToken.None);
     }
 
@@ -473,17 +465,14 @@ public static class Program
     {
         if (_ws == null || _ws.State != WebSocketState.Open) return;
         byte[] bytes = Encoding.UTF8.GetBytes(json);
-        try
-        {
-            await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
-        }
-        catch { }
+        try { await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct); } catch { }
     }
 }
 
 public sealed class KeyConfig
 {
     public string Action { get; set; } = "Sleep";
-    public int DurationMinutes { get; set; } = 30;
+    public string Duration { get; set; } = "30s";
     public bool SoundEnabled { get; set; } = false;
+    public string? CustomTitle { get; set; }
 }
