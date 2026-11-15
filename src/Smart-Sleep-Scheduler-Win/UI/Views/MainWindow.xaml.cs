@@ -126,6 +126,7 @@ public partial class MainWindow : Window
         if (_timerService.State == TimerState.Running)
         {
             UpdateDisplay(remaining);
+            IpcService.BroadcastState(TimerStateSnapshot.Running(App.Settings.SelectedPowerAction.ToString(), (int)Math.Ceiling(remaining.TotalSeconds), (int)_readyDuration.TotalSeconds));
 
             int remainingSecs = (int)Math.Ceiling(remaining.TotalSeconds);
             if (remainingSecs != _lastMilestoneChecked)
@@ -157,8 +158,11 @@ public partial class MainWindow : Window
 
     private void OnTimerStateChanged(TimerState state)
     {
+        string act = App.Settings.SelectedPowerAction.ToString();
+        int rem = (int)Math.Ceiling(_timerService.RemainingTime.TotalSeconds), total = (int)_readyDuration.TotalSeconds;
         if (state == TimerState.Running)
         {
+            IpcService.BroadcastState(TimerStateSnapshot.Running(act, rem, total));
             PrimaryActionButton.Content = "STOP (Esc)";
             PrimaryActionButton.Style = (Style)FindResource("DangerButtonStyle");
             PrimaryActionButton.ToolTip = "Stop Countdown (Shortcut: Esc)";
@@ -167,6 +171,7 @@ public partial class MainWindow : Window
         }
         else if (state == TimerState.Paused)
         {
+            IpcService.BroadcastState(TimerStateSnapshot.Paused(act, rem, total));
             PrimaryActionButton.Content = "RESUME";
             PrimaryActionButton.Style = (Style)FindResource("AccentButtonStyle");
             PrimaryActionButton.ToolTip = "Resume Countdown";
@@ -175,6 +180,7 @@ public partial class MainWindow : Window
         }
         else
         {
+            IpcService.BroadcastState(TimerStateSnapshot.Stopped(act, total));
             PrimaryActionButton.Style = (Style)FindResource("StartButtonStyle");
             PrimaryActionButton.ToolTip = "Start Countdown";
             SetSecondaryButtonsState(true);
@@ -458,6 +464,7 @@ public partial class MainWindow : Window
     public void ApplyRuntimeOverrides(LaunchOverrides? overrides)
     {
         if (overrides == null || !overrides.HasOverrides) return;
+        if (overrides.StopRequested) { _timerService.Stop(); return; }
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
         if (overrides.Action.HasValue) App.Settings.SelectedPowerAction = overrides.Action.Value;

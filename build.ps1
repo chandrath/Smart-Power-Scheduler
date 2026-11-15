@@ -63,7 +63,17 @@ New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
 $selfContainedDir = Join-Path $tempPublishDir "SelfContained"
 $frameworkDepDir = Join-Path $tempPublishDir "FrameworkDependent"
 
-# 3. Publish Self-Contained (No .NET runtime required)
+$streamDeckProj = Join-Path $srcDir "StreamDeck.Plugin\SmartSleepScheduler.StreamDeck.csproj"
+$streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartsleepscheduler.sdPlugin"
+
+$selfContainedSDDir = Join-Path $tempPublishDir "StreamDeckSelfContained"
+$frameworkDepSDDir = Join-Path $tempPublishDir "StreamDeckFrameworkDep"
+
+# Copy base plugin templates to staging directories
+Copy-Item -Path $streamDeckPluginSrc -Destination $selfContainedSDDir -Recurse -Force
+Copy-Item -Path $streamDeckPluginSrc -Destination $frameworkDepSDDir -Recurse -Force
+
+# 3. Publish Self-Contained Win-x64
 Write-Host "`n[1/4] Publishing Self-Contained Win-x64 build..." -ForegroundColor Magenta
 dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
     -c Release `
@@ -75,7 +85,18 @@ dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
     -p:Version=$appVersion `
     -o $selfContainedDir
 
-# 4. Publish Framework-Dependent (Requires .NET 10)
+Write-Host "-> Publishing Stream Deck Plugin (Self-Contained)..."
+dotnet publish $streamDeckProj `
+    -c Release `
+    -r win-x64 `
+    --self-contained true `
+    -p:PublishSingleFile=true `
+    -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:EnableCompressionInSingleFile=true `
+    -p:Version=$appVersion `
+    -o $selfContainedSDDir
+
+# 4. Publish Framework-Dependent Win-x64 (Requires .NET 10)
 Write-Host "`n[2/4] Publishing Framework-Dependent Win-x64 build..." -ForegroundColor Magenta
 dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
     -c Release `
@@ -87,12 +108,31 @@ dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
     -p:Version=$appVersion `
     -o $frameworkDepDir
 
-# 5. Create Portable ZIP Archives
+Write-Host "-> Publishing Stream Deck Plugin (Framework-Dependent)..."
+dotnet publish $streamDeckProj `
+    -c Release `
+    -r win-x64 `
+    --no-self-contained `
+    -p:PublishSingleFile=true `
+    -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:EnableCompressionInSingleFile=false `
+    -p:Version=$appVersion `
+    -o $frameworkDepSDDir
+
+# 5. Create Portable ZIP Archives (includes optional StreamDeck plugin bundle)
 Write-Host "`n[3/4] Packaging Portable ZIP archives..." -ForegroundColor Magenta
+
+$sdPortableSelfContained = Join-Path $selfContainedDir "StreamDeck\com.appsphinx.smartsleepscheduler.sdPlugin"
+New-Item -ItemType Directory -Path (Split-Path $sdPortableSelfContained -Parent) -Force | Out-Null
+Copy-Item -Path $selfContainedSDDir -Destination $sdPortableSelfContained -Recurse -Force
 
 $portableZip = Join-Path $artifactsDir "$appName-v$appVersion-win-x64-Portable.zip"
 Write-Host "Creating: $(Split-Path $portableZip -Leaf)"
 Compress-Archive -Path "$selfContainedDir\*" -DestinationPath $portableZip -CompressionLevel Optimal
+
+$sdPortableFrameworkDep = Join-Path $frameworkDepDir "StreamDeck\com.appsphinx.smartsleepscheduler.sdPlugin"
+New-Item -ItemType Directory -Path (Split-Path $sdPortableFrameworkDep -Parent) -Force | Out-Null
+Copy-Item -Path $frameworkDepSDDir -Destination $sdPortableFrameworkDep -Recurse -Force
 
 $portableReqDotNetZip = Join-Path $artifactsDir "$appName-v$appVersion-win-x64-Portable-ReqDotNet10.zip"
 Write-Host "Creating: $(Split-Path $portableReqDotNetZip -Leaf)"
@@ -131,6 +171,7 @@ if ($isccPath) {
         "/DMyAppURL=$appUrl" `
         "/DMyAppId=$appId" `
         "/DSourceDir=$selfContainedDir" `
+        "/DStreamDeckPluginDir=$selfContainedSDDir" `
         "/DOutputDir=$artifactsDir" `
         "/DOutputBaseFilename=$setupBaseName" `
         $issPath | Out-Null
@@ -146,6 +187,7 @@ if ($isccPath) {
         "/DMyAppURL=$appUrl" `
         "/DMyAppId=$appId" `
         "/DSourceDir=$frameworkDepDir" `
+        "/DStreamDeckPluginDir=$frameworkDepSDDir" `
         "/DOutputDir=$artifactsDir" `
         "/DOutputBaseFilename=$setupReqDotNetBaseName" `
         $issPath | Out-Null

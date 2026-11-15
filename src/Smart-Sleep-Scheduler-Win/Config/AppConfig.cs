@@ -21,6 +21,9 @@ public sealed class AppConfig
     [JsonPropertyName("Defaults")]
     public AppDefaults Defaults { get; set; } = new();
 
+    [JsonPropertyName("StreamDeck")]
+    public StreamDeckConfig StreamDeck { get; set; } = new();
+
     public static AppConfig Load()
     {
         try
@@ -94,5 +97,14 @@ public sealed class AppDefaults
     [
         "caffeine", "dontsleep", "powertoys.awake", "mousejiggler", "nosleep", "stayawake", "amphetamine"
     ];
+}
+
+public sealed class StreamDeckConfig
+{
+    public string PluginUUID { get; set; } = "com.appsphinx.smartsleepscheduler.sdPlugin";
+    public string ActionTimerUUID { get; set; } = "com.appsphinx.smartsleepscheduler.action.timer";
+    public string PluginName { get; set; } = "Smart Sleep Scheduler";
+    public string DefaultAction { get; set; } = "Sleep";
+    public int DefaultDurationMinutes { get; set; } = 30;
 }
 

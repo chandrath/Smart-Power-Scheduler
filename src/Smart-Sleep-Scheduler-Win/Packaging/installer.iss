@@ -8,7 +8,7 @@
   #define MyAppExeName "SmartSleepScheduler.exe"
 #endif
 #ifndef MyAppVersion
-  #define MyAppVersion "0.9.0.1"
+  #define MyAppVersion "0.9.0.2"
 #endif
 #ifndef MyPublisher
   #define MyPublisher "Appsphinx"
@@ -21,6 +21,9 @@
 #endif
 #ifndef SourceDir
   #define SourceDir "..\bin\Publish\SelfContained"
+#endif
+#ifndef StreamDeckPluginDir
+  #define StreamDeckPluginDir "..\StreamDeck.Plugin\com.appsphinx.smartsleepscheduler.sdPlugin"
 #endif
 #ifndef OutputDir
   #define OutputDir "..\..\..\artifacts"
@@ -54,11 +57,21 @@ PrivilegesRequiredOverridesAllowed=dialog
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Types]
+Name: "full"; Description: "Full installation (Includes Stream Deck integration)"
+Name: "compact"; Description: "Compact installation (Application only)"
+Name: "custom"; Description: "Custom installation"; Flags: iscustom
+
+[Components]
+Name: "main"; Description: "Sleep Timer Application (Required)"; Types: full compact custom; Flags: fixed
+Name: "streamdeck"; Description: "Elgato Stream Deck Integration (Optional)"; Types: full
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Components: main; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#StreamDeckPluginDir}\*"; DestDir: "{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartsleepscheduler.sdPlugin"; Components: streamdeck; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -66,3 +79,84 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function IsProcessRunning(const ExeName: String): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := Exec('cmd.exe', '/c tasklist /NH /FI "IMAGENAME eq ' + ExeName + '" | findstr /I "' + ExeName + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+end;
+
+function IsStreamDeckInstalled(): Boolean;
+begin
+  Result := DirExists(ExpandConstant('{userappdata}\Elgato\StreamDeck')) or
+            FileExists(ExpandConstant('{commonpf}\Elgato\StreamDeck\StreamDeck.exe')) or
+            FileExists(ExpandConstant('{autopf}\Elgato\StreamDeck\StreamDeck.exe')) or
+            FileExists(ExpandConstant('{commonpf32}\Elgato\StreamDeck\StreamDeck.exe'));
+end;
+
+procedure TaskKillStreamDeckPlugin();
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill.exe', '/F /IM SmartSleepScheduler.StreamDeck.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure CloseStreamDeckApp();
+var
+  ResultCode: Integer;
+begin
+  Exec('taskkill.exe', '/F /IM StreamDeck.exe /IM SmartSleepScheduler.StreamDeck.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(1000);
+end;
+
+procedure InitializeWizard();
+begin
+  if IsStreamDeckInstalled() then
+  begin
+    WizardSelectComponents('main,streamdeck');
+  end
+  else
+  begin
+    WizardSelectComponents('main');
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  TaskKillStreamDeckPlugin();
+
+  if WizardIsComponentSelected('streamdeck') and IsProcessRunning('StreamDeck.exe') then
+  begin
+    if MsgBox('Elgato Stream Deck is currently running. It must be closed to install / update the plugin files. Would you like Setup to close Stream Deck automatically?', mbConfirmation, MB_YESNO) = IDYES then
+    begin
+      CloseStreamDeckApp();
+    end
+    else
+    begin
+      Result := 'Installation cannot continue while Elgato Stream Deck is running. Please close Stream Deck and run Setup again.';
+    end;
+  end;
+end;
+
+function InitializeSetup(): Boolean;
+begin
+  TaskKillStreamDeckPlugin();
+  Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    TaskKillStreamDeckPlugin();
+  end;
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  TaskKillStreamDeckPlugin();
+  Result := True;
+end;

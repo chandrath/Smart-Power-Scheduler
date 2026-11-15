@@ -1,16 +1,24 @@
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
+using System.Text.Json;
+using SmartSleepScheduler.Core.Models;
 
 namespace SmartSleepScheduler.Core.Services;
 
 /// <summary>
 /// Lightweight, zero-firewall local Named Pipe IPC service
-/// to forward command-line arguments to an already-running instance.
+/// to forward command-line arguments and broadcast live timer state
+/// to companion integrations like Elgato Stream Deck.
 /// </summary>
 public static class IpcService
 {
-    private const string PipeName = "SmartSleepScheduler_IPC_Pipe_9E2F9F24";
+    public const string PipeName = "SmartSleepScheduler_IPC_Pipe_9E2F9F24";
+    public const string StatePipeName = "SmartSleepScheduler_State_Pipe_9E2F9F24";
+
+    private static readonly List<NamedPipeServerStream> _stateClients = new();
+    private static readonly object _stateLock = new();
+    private static TimerStateSnapshot _lastSnapshot = TimerStateSnapshot.Stopped();
 
     public static bool TrySendToExistingInstance(string[] args)
     {
@@ -80,5 +88,79 @@ public static class IpcService
             }
         }, ct);
     }
-}
 
+    public static void BroadcastState(TimerStateSnapshot snapshot)
+    {
+        _lastSnapshot = snapshot;
+        string json = JsonSerializer.Serialize(snapshot) + "\n";
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+        lock (_stateLock)
+        {
+            for (int i = _stateClients.Count - 1; i >= 0; i--)
+            {
+                var client = _stateClients[i];
+                if (!client.IsConnected)
+                {
+                    try { client.Dispose(); } catch { }
+                    _stateClients.RemoveAt(i);
+                    continue;
+                }
+
+                try
+                {
+                    client.Write(bytes, 0, bytes.Length);
+                    client.Flush();
+                }
+                catch
+                {
+                    try { client.Dispose(); } catch { }
+                    _stateClients.RemoveAt(i);
+                }
+            }
+        }
+    }
+
+    public static void StartStateServer(CancellationToken ct = default)
+    {
+        Task.Run(async () =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                NamedPipeServerStream? server = null;
+                try
+                {
+                    server = new NamedPipeServerStream(
+                        StatePipeName,
+                        PipeDirection.Out,
+                        NamedPipeServerStream.MaxAllowedServerInstances,
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous);
+
+                    await server.WaitForConnectionAsync(ct);
+
+                    // Send initial state immediately upon connection
+                    string json = JsonSerializer.Serialize(_lastSnapshot) + "\n";
+                    byte[] bytes = Encoding.UTF8.GetBytes(json);
+                    await server.WriteAsync(bytes, 0, bytes.Length, ct);
+                    await server.FlushAsync(ct);
+
+                    lock (_stateLock)
+                    {
+                        _stateClients.Add(server);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    server?.Dispose();
+                    break;
+                }
+                catch
+                {
+                    server?.Dispose();
+                    try { await Task.Delay(500, ct); } catch { break; }
+                }
+            }
+        }, ct);
+    }
+}

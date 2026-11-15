@@ -83,6 +83,11 @@ public static class CommandLineService
                     overrides.AutoStart = true;
                     break;
 
+                case "--stop":
+                case "--cancel":
+                    overrides.StopRequested = true;
+                    break;
+
                 case "--no-start":
                 case "--no-autostart":
                     overrides.AutoStart = false;

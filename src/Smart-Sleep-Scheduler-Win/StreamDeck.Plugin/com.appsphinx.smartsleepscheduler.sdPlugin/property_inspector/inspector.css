@@ -1,0 +1,80 @@
+body {
+    background-color: #2D2D2D;
+    color: #D8D8D8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 9pt;
+    margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+.sdpi-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sdpi-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sdpi-item-label {
+    font-size: 8.5pt;
+    color: #9E9E9E;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.sdpi-item-value {
+    width: 100%;
+}
+
+select, input[type="number"], input[type="text"] {
+    width: 100%;
+    height: 30px;
+    background-color: #3C3C3C;
+    color: #FFFFFF;
+    border: 1px solid #4F4F4F;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 9pt;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+select:focus, input:focus {
+    border-color: #0078D7;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+input[type="checkbox"] {
+    accent-color: #0078D7;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.hint-text {
+    font-size: 8pt;
+    color: #808080;
+    margin-top: 2px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 10px;
+}

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
@@ -65,8 +66,15 @@ public partial class App : Application
         // 3. Initialize Single Source of Truth
         _ = AppConfig.Instance;
 
-        // 4. Load User Settings
+        // 4. Load User Settings & Cache App Path for Integrations
         Settings = UserSettings.Load();
+        try
+        {
+            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppConfig.Instance.App.Vendor, AppConfig.Instance.App.Name);
+            Directory.CreateDirectory(appData);
+            File.WriteAllText(Path.Combine(appData, "app_path.txt"), Environment.ProcessPath ?? "");
+        }
+        catch { }
 
         // 5. Apply Theme
         ThemeService.Instance.ApplyTheme(Settings.Theme);
@@ -75,7 +83,7 @@ public partial class App : Application
         var mainWindow = new MainWindow(overrides);
         mainWindow.Show();
 
-        // 7. Start Background IPC Listener
+        // 7. Start Background IPC Listener & State Server
         _ipcCancelSource = new CancellationTokenSource();
         IpcService.StartServer(args =>
         {
@@ -85,6 +93,7 @@ public partial class App : Application
                 mainWindow.ApplyRuntimeOverrides(incoming);
             });
         }, _ipcCancelSource.Token);
+        IpcService.StartStateServer(_ipcCancelSource.Token);
     }
 
     protected override void OnExit(ExitEventArgs e)

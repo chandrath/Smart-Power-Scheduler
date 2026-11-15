@@ -18,6 +18,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="StreamDeck.Plugin\**" />
+    <EmbeddedResource Remove="StreamDeck.Plugin\**" />
+    <None Remove="StreamDeck.Plugin\**" />
+    <Page Remove="StreamDeck.Plugin\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\app.png" />
     <EmbeddedResource Include="Config\DevConfig.json">
