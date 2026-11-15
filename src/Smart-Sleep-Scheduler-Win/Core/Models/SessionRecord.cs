@@ -21,6 +21,7 @@ public sealed class SessionRecord
         PowerAction.Restart => "Restart",
         PowerAction.ForceShutdown => "Force Shutdown",
         PowerAction.ForceRestart => "Force Restart",
+        PowerAction.Lock => "Lock PC",
         _ => Action.ToString()
     };
 
@@ -29,6 +30,7 @@ public sealed class SessionRecord
     {
         PowerAction.Sleep => "🌙",
         PowerAction.Hibernate => "❄️",
+        PowerAction.Lock => "🔒",
         PowerAction.Restart or PowerAction.ForceRestart => "🔄",
         _ => "⚡"
     };

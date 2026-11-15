@@ -13,8 +13,19 @@ public static class PowerService
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
 
+    [DllImport("powrprof.dll")]
+    private static extern bool IsPwrHibernateAllowed();
+
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetSystemPowerState(bool fSuspend, bool fForce);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool LockWorkStation();
+
+    public static bool IsHibernateSupported()
+    {
+        try { return IsPwrHibernateAllowed(); } catch { return false; }
+    }
 
     public static bool ExecuteAction(PowerAction action, out string errorMessage)
     {
@@ -24,32 +35,34 @@ public static class PowerService
             switch (action)
             {
                 case PowerAction.Sleep:
-                    // Safe Sleep: Standby S3/Modern Standby
                     bool sleepSuccess = SetSuspendState(hibernate: false, forceCritical: false, disableWakeEvent: false);
                     if (!sleepSuccess) SetSystemPowerState(fSuspend: true, fForce: false);
                     return true;
 
                 case PowerAction.Hibernate:
-                    // Explicit hibernation requested by user in advanced settings
+                    if (!IsHibernateSupported())
+                    {
+                        // Safe fallback to Sleep if hibernate is disabled in Windows
+                        return SetSuspendState(hibernate: false, forceCritical: false, disableWakeEvent: false);
+                    }
                     return SetSuspendState(hibernate: true, forceCritical: false, disableWakeEvent: false);
 
+                case PowerAction.Lock:
+                    return LockWorkStation();
+
                 case PowerAction.Shutdown:
-                    // Graceful shutdown (prompts unsaved work if needed)
                     RunCommand("shutdown.exe", "/s /t 0");
                     return true;
 
                 case PowerAction.Restart:
-                    // Graceful reboot
                     RunCommand("shutdown.exe", "/r /t 0");
                     return true;
 
                 case PowerAction.ForceShutdown:
-                    // Force shutdown immediately
                     RunCommand("shutdown.exe", "/s /f /t 0");
                     return true;
 
                 case PowerAction.ForceRestart:
-                    // Force restart immediately
                     RunCommand("shutdown.exe", "/r /f /t 0");
                     return true;
 
@@ -86,6 +99,7 @@ public static class PowerService
         PowerAction.Restart => "Restart",
         PowerAction.ForceShutdown => "Force Shutdown",
         PowerAction.ForceRestart => "Force Restart",
+        PowerAction.Lock => "Lock PC",
         _ => "Sleep"
     };
 

@@ -415,7 +415,7 @@ public static class Program
 
         if (state.State == "Running")
         {
-            bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
+            bool isPower = state.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("restart", StringComparison.OrdinalIgnoreCase) || state.Action.Contains("lock", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "running_shutdown" : "running_sleep";
 
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
@@ -431,7 +431,7 @@ public static class Program
         }
         else
         {
-            bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
+            bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("lock", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "idle_shutdown" : "idle_sleep";
             title = state.State == "Paused" ? $"PAUSED\n{actShort}" : $"{config.Duration}\n{actShort}";
         }
@@ -458,7 +458,7 @@ public static class Program
     private static string FormatActionShort(string action)
     {
         string c = action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "");
-        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", _ => action.ToUpperInvariant() };
+        return c switch { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", "lock" => "LOCK", _ => action.ToUpperInvariant() };
     }
 
     private static string FormatDuration(int totalSeconds)

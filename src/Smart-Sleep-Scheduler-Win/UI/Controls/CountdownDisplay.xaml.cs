@@ -170,6 +170,7 @@ public partial class CountdownDisplay : UserControl
                 PowerAction.Restart => "🔄 RESTARTED",
                 PowerAction.ForceShutdown => "⚡ FORCE SHUT DOWN",
                 PowerAction.ForceRestart => "⚡ FORCE RESTARTED",
+                PowerAction.Lock => "🔒 LOCKED",
                 _ => "🌙 ASLEEP"
             };
         }
@@ -185,6 +186,7 @@ public partial class CountdownDisplay : UserControl
                 PowerAction.Restart => "🔄 Restart Mode",
                 PowerAction.ForceShutdown => "⚡ Force Shutdown",
                 PowerAction.ForceRestart => "⚡ Force Restart",
+                PowerAction.Lock => "🔒 Lock Mode",
                 _ => "🌙 Sleep Mode"
             };
         }
@@ -215,6 +217,12 @@ public partial class CountdownDisplay : UserControl
                 ActionLabelText.Foreground = iceBrush;
                 ProgressTrackRing.Stroke = iceBrush;
                 break;
+
+            case PowerAction.Lock:
+                var lockBrush = new SolidColorBrush(Color.FromRgb(168, 85, 247));
+                ActionLabelText.Foreground = lockBrush;
+                ProgressTrackRing.Stroke = lockBrush;
+                break;
         }
     }
 
@@ -226,6 +234,7 @@ public partial class CountdownDisplay : UserControl
         PowerAction.Restart => "Restart",
         PowerAction.ForceShutdown => "Force Shutdown",
         PowerAction.ForceRestart => "Force Restart",
+        PowerAction.Lock => "Lock PC",
         _ => "Sleep"
     };
 

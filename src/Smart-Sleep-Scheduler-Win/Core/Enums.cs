@@ -7,7 +7,8 @@ public enum PowerAction
     Shutdown,
     Restart,
     ForceShutdown,
-    ForceRestart
+    ForceRestart,
+    Lock
 }
 
 public enum AppTheme

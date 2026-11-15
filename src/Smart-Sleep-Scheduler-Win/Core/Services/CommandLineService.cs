@@ -152,6 +152,7 @@ public static class CommandLineService
             "restart" or "reboot" => PowerAction.Restart,
             "forceshutdown" => PowerAction.ForceShutdown,
             "forcerestart" => PowerAction.ForceRestart,
+            "lock" or "lockpc" => PowerAction.Lock,
             _ => PowerAction.Sleep
         };
         return true;
@@ -168,6 +169,7 @@ public static class CommandLineService
             PowerAction.Restart => "restart",
             PowerAction.ForceShutdown => "force-shutdown",
             PowerAction.ForceRestart => "force-restart",
+            PowerAction.Lock => "lock",
             _ => "sleep"
         };
 

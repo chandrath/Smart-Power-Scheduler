@@ -41,239 +41,257 @@
                           Padding="0,0,6,0"
                           Margin="0,0,0,12">
                 <StackPanel>
+                    <!-- Section: Power Action on Expiry (Top Priority) -->
+                    <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Power Action on Expiry"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Default is safe Sleep without closing or forcing applications."
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,2,0,8" />
+                            <ComboBox x:Name="PowerActionCombo" SelectionChanged="PowerActionCombo_SelectionChanged">
+                                <ComboBoxItem Content="Sleep (Default - Safe)" IsSelected="True" />
+                                <ComboBoxItem x:Name="HibernateComboItem" Content="Hibernate" />
+                                <ComboBoxItem Content="Shutdown (Graceful)" />
+                                <ComboBoxItem Content="Restart (Graceful)" />
+                                <ComboBoxItem Content="Force Shutdown (Advanced)" />
+                                <ComboBoxItem Content="Force Restart (Advanced)" />
+                                <ComboBoxItem Content="Lock PC" />
+                            </ComboBox>
+
+                            <!-- Force Action Warning Banner -->
+                            <Border x:Name="ForceWarningBanner"
+                                    Background="#33EF4444"
+                                    BorderBrush="{DynamicResource UrgencyBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10"
+                                    Margin="0,10,0,0"
+                                    Visibility="Collapsed">
+                                <TextBlock x:Name="ForceWarningText"
+                                           Text="⚠️ Warning: Force actions will terminate unsaved documents immediately."
+                                           FontSize="11"
+                                           Foreground="{DynamicResource UrgencyBrush}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Section: Default Timer Duration -->
-                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
-                        BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14"
-                        Margin="0,0,0,12">
-                    <StackPanel>
-                        <TextBlock Text="Default Timer Duration"
-                                   FontWeight="SemiBold"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="Default countdown duration when resetting or starting manually."
-                                   FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,2,0,8" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*" />
-                                <ColumnDefinition Width="10" />
-                                <ColumnDefinition Width="3*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="DefaultDurationInput"
-                                     Grid.Column="0"
-                                     Text="1"
-                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
-                            <ComboBox x:Name="DefaultDurationUnitCombo"
-                                      Grid.Column="2">
-                                <ComboBoxItem Content="Seconds" />
-                                <ComboBoxItem Content="Minutes" IsSelected="True" />
-                                <ComboBoxItem Content="Hours" />
-                            </ComboBox>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Section: Auto-Start on Launch -->
-                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
-                        BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14"
-                        Margin="0,0,0,12">
-                    <StackPanel>
-                        <CheckBox x:Name="AutoStartCheck"
-                                  Content="Auto-start countdown on launch"
-                                  FontSize="13"
-                                  FontWeight="SemiBold"
-                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                  IsChecked="True"
-                                  Margin="0,0,0,6" />
-                        <TextBlock Text="Starts a 1-minute countdown automatically when app opens."
-                                   FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,0,0,8" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*" />
-                                <ColumnDefinition Width="10" />
-                                <ColumnDefinition Width="3*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="AutoStartDurationInput"
-                                     Grid.Column="0"
-                                     Text="1"
-                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
-                            <ComboBox x:Name="AutoStartDurationUnitCombo"
-                                      Grid.Column="2">
-                                <ComboBoxItem Content="Seconds" />
-                                <ComboBoxItem Content="Minutes" IsSelected="True" />
-                                <ComboBoxItem Content="Hours" />
-                            </ComboBox>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Section: Window & Appearance -->
-                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
-                        BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14"
-                        Margin="0,0,0,12">
-                    <StackPanel>
-                        <TextBlock Text="Window &amp; Appearance"
-                                   FontWeight="SemiBold"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,0,0,8" />
-
-                        <CheckBox x:Name="AlwaysOnTopCheck"
-                                  Content="Always keep window on top"
-                                  FontSize="12"
-                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                  IsChecked="True"
-                                  Margin="0,0,0,10" />
-
-                        <CheckBox x:Name="SoundEnabledCheck"
-                                  Content="Enable countdown audio tick sound"
-                                  FontSize="12"
-                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                  IsChecked="False"
-                                  Checked="SoundEnabledCheck_Changed"
-                                  Unchecked="SoundEnabledCheck_Changed"
-                                  Margin="0,0,0,8" />
-
-                        <!-- Audio Volume Slider & Scheme Panel -->
-                        <StackPanel x:Name="SoundOptionsPanel" Margin="20,0,0,10">
-                            <Grid Margin="0,0,0,4">
+                    <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Default Timer Duration"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Default countdown duration when resetting or starting manually."
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,2,0,8" />
+                            <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="3*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Sound Volume"
+                                <TextBox x:Name="DefaultDurationInput"
+                                         Grid.Column="0"
+                                         Text="1"
+                                         PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                <ComboBox x:Name="DefaultDurationUnitCombo"
+                                          Grid.Column="2">
+                                    <ComboBoxItem Content="Seconds" />
+                                    <ComboBoxItem Content="Minutes" IsSelected="True" />
+                                    <ComboBoxItem Content="Hours" />
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Auto-Start on Launch -->
+                    <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <CheckBox x:Name="AutoStartCheck"
+                                      Content="Auto-start countdown on app launch"
+                                      FontSize="13"
+                                      FontWeight="SemiBold"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="True"
+                                      Margin="0,0,0,6" />
+                            <TextBlock Text="Starts a 1-minute countdown automatically when app opens."
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="3*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="AutoStartDurationInput"
+                                         Grid.Column="0"
+                                         Text="1"
+                                         PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                <ComboBox x:Name="AutoStartDurationUnitCombo"
+                                          Grid.Column="2">
+                                    <ComboBoxItem Content="Seconds" />
+                                    <ComboBoxItem Content="Minutes" IsSelected="True" />
+                                    <ComboBoxItem Content="Hours" />
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Sound & Audio Feedback (Dedicated Section) -->
+                    <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Sound &amp; Audio Feedback"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8" />
+
+                            <CheckBox x:Name="SoundEnabledCheck"
+                                      Content="Enable countdown audio tick sound"
+                                      FontSize="12"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="False"
+                                      Checked="SoundEnabledCheck_Changed"
+                                      Unchecked="SoundEnabledCheck_Changed"
+                                      Margin="0,0,0,8" />
+
+                            <!-- Audio Volume Slider & Scheme Panel -->
+                            <StackPanel x:Name="SoundOptionsPanel" Margin="20,0,0,0">
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Sound Volume"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock x:Name="VolumeValueText"
+                                               Grid.Column="1"
+                                               Text="80%"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               Margin="0,0,10,0"
+                                               VerticalAlignment="Center" />
+                                    <Button x:Name="TestSoundButton"
+                                            Grid.Column="2"
+                                            Content="▶ Test"
+                                            Padding="8,2"
+                                            FontSize="11"
+                                            Style="{StaticResource FluentButtonStyle}"
+                                            Click="TestSoundButton_Click"
+                                            ToolTip="Play test sound at current volume" />
+                                </Grid>
+                                <Slider x:Name="SoundVolumeSlider"
+                                        Minimum="10"
+                                        Maximum="100"
+                                        Value="80"
+                                        SmallChange="5"
+                                        LargeChange="10"
+                                        TickFrequency="10"
+                                        IsSnapToTickEnabled="False"
+                                        ValueChanged="SoundVolumeSlider_ValueChanged"
+                                        Margin="0,2,0,8" />
+
+                                <TextBlock Text="Sound Tone"
                                            FontSize="11"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
-                                           VerticalAlignment="Center" />
-                                <TextBlock x:Name="VolumeValueText"
-                                           Grid.Column="1"
-                                           Text="80%"
+                                           Margin="0,0,0,4" />
+                                <ComboBox x:Name="SoundSchemeCombo"
+                                          SelectionChanged="SoundSchemeCombo_SelectionChanged"
+                                          Margin="0,0,0,8">
+                                    <ComboBoxItem Content="Modern Chime (Default)" IsSelected="True" />
+                                    <ComboBoxItem Content="Classic Beep" />
+                                    <ComboBoxItem Content="Soft Tone" />
+                                </ComboBox>
+
+                                <TextBlock Text="Tick Sound Timing (Starts when time is under)"
                                            FontSize="11"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextPrimaryBrush}"
-                                           Margin="0,0,10,0"
-                                           VerticalAlignment="Center" />
-                                <Button x:Name="TestSoundButton"
-                                        Grid.Column="2"
-                                        Content="▶ Test"
-                                        Padding="8,2"
-                                        FontSize="11"
-                                        Style="{StaticResource FluentButtonStyle}"
-                                        Click="TestSoundButton_Click"
-                                        ToolTip="Play test sound at current volume" />
-                            </Grid>
-                            <Slider x:Name="SoundVolumeSlider"
-                                    Minimum="10"
-                                    Maximum="100"
-                                    Value="80"
-                                    SmallChange="5"
-                                    LargeChange="10"
-                                    TickFrequency="10"
-                                    IsSnapToTickEnabled="False"
-                                    ValueChanged="SoundVolumeSlider_ValueChanged"
-                                    Margin="0,2,0,8" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,0,0,4" />
+                                <ComboBox x:Name="TickTimingCombo"
+                                          Margin="0,0,0,4">
+                                    <ComboBoxItem Content="10 seconds" />
+                                    <ComboBoxItem Content="15 seconds" />
+                                    <ComboBoxItem Content="20 seconds" />
+                                    <ComboBoxItem Content="25 seconds" />
+                                    <ComboBoxItem Content="30 seconds (Default)" IsSelected="True" />
+                                    <ComboBoxItem Content="45 seconds" />
+                                    <ComboBoxItem Content="60 seconds (1 minute)" />
+                                    <ComboBoxItem Content="2 minutes" />
+                                    <ComboBoxItem Content="5 minutes" />
+                                    <ComboBoxItem Content="Entire countdown" />
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-                            <TextBlock Text="Sound Tone"
-                                       FontSize="11"
+                    <!-- Section: Window & Appearance -->
+                    <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="14"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Window &amp; Appearance"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8" />
+
+                            <CheckBox x:Name="AlwaysOnTopCheck"
+                                      Content="Always keep window on top"
+                                      FontSize="12"
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="True"
+                                      Margin="0,0,0,10" />
+
+                            <TextBlock Text="Theme Preference"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        Margin="0,0,0,4" />
-                            <ComboBox x:Name="SoundSchemeCombo"
-                                      SelectionChanged="SoundSchemeCombo_SelectionChanged"
-                                      Margin="0,0,0,8">
-                                <ComboBoxItem Content="Modern Chime (Default)" IsSelected="True" />
-                                <ComboBoxItem Content="Classic Beep" />
-                                <ComboBoxItem Content="Soft Tone" />
-                            </ComboBox>
-
-                            <TextBlock Text="Tick Sound Timing (Starts when time is under)"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Margin="0,0,0,4" />
-                            <ComboBox x:Name="TickTimingCombo"
-                                      Margin="0,0,0,4">
-                                <ComboBoxItem Content="10 seconds" />
-                                <ComboBoxItem Content="15 seconds" />
-                                <ComboBoxItem Content="20 seconds" />
-                                <ComboBoxItem Content="25 seconds" />
-                                <ComboBoxItem Content="30 seconds (Default)" IsSelected="True" />
-                                <ComboBoxItem Content="45 seconds" />
-                                <ComboBoxItem Content="60 seconds (1 minute)" />
-                                <ComboBoxItem Content="2 minutes" />
-                                <ComboBoxItem Content="5 minutes" />
-                                <ComboBoxItem Content="Entire countdown" />
+                            <ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeCombo_SelectionChanged">
+                                <ComboBoxItem Content="Dark Mode (Default)" IsSelected="True" />
+                                <ComboBoxItem Content="Light Mode" />
+                                <ComboBoxItem Content="Windows System Auto" />
                             </ComboBox>
                         </StackPanel>
+                    </Border>
 
-                        <TextBlock Text="Theme Preference"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,0,0,4" />
-                        <ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeCombo_SelectionChanged">
-                            <ComboBoxItem Content="Dark Mode (Default)" IsSelected="True" />
-                            <ComboBoxItem Content="Light Mode" />
-                            <ComboBoxItem Content="Windows System Auto" />
-                        </ComboBox>
-                    </StackPanel>
-                </Border>
-
-                <!-- Section: Power Action -->
-                <Border Background="{DynamicResource SolidCardBackgroundBrush}"
-                        BorderBrush="{DynamicResource CardBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14"
-                        Margin="0,0,0,12">
-                    <StackPanel>
-                        <TextBlock Text="Power Action on Expiry"
-                                   FontWeight="SemiBold"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="Default is safe Sleep without closing or forcing applications."
-                                   FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   Margin="0,2,0,8" />
-                        <ComboBox x:Name="PowerActionCombo" SelectionChanged="PowerActionCombo_SelectionChanged">
-                            <ComboBoxItem Content="Sleep (Default - Safe)" IsSelected="True" />
-                            <ComboBoxItem Content="Hibernate" />
-                            <ComboBoxItem Content="Shutdown (Graceful)" />
-                            <ComboBoxItem Content="Restart (Graceful)" />
-                            <ComboBoxItem Content="Force Shutdown (Advanced)" />
-                            <ComboBoxItem Content="Force Restart (Advanced)" />
-                        </ComboBox>
-
-                        <!-- Force Action Warning Banner -->
-                        <Border x:Name="ForceWarningBanner"
-                                Background="#33EF4444"
-                                BorderBrush="{DynamicResource UrgencyBrush}"
-                                BorderThickness="1"
-                                CornerRadius="6"
-                                Padding="10"
-                                Margin="0,10,0,0"
-                                Visibility="Collapsed">
-                            <TextBlock x:Name="ForceWarningText"
-                                       Text="⚠️ Warning: Force actions will terminate unsaved documents immediately."
-                                       FontSize="11"
-                                       Foreground="{DynamicResource UrgencyBrush}"
-                                       TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
-                </Border>
 
                 <!-- Section: Sleep Blocker Defense -->
                 <Border Background="{DynamicResource SolidCardBackgroundBrush}"
@@ -536,6 +554,7 @@
                                     <ComboBoxItem Content="🔄 Restart" />
                                     <ComboBoxItem Content="⚠️ Force Shutdown" />
                                     <ComboBoxItem Content="⚠️ Force Restart" />
+                                    <ComboBoxItem Content="🔒 Lock PC" />
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="0,0,6,0">

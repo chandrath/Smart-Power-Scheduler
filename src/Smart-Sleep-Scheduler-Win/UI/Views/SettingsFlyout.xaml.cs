@@ -104,7 +104,13 @@ public partial class SettingsFlyout : UserControl
         // Theme
         ThemeCombo.SelectedIndex = (int)s.Theme;
 
-        // Power Action
+        // Power Action & Hibernate capability
+        bool hiberOk = PowerService.IsHibernateSupported();
+        if (HibernateComboItem != null)
+        {
+            HibernateComboItem.IsEnabled = hiberOk;
+            HibernateComboItem.ToolTip = hiberOk ? null : "Hibernate is disabled in Windows power settings.";
+        }
         PowerActionCombo.SelectedIndex = (int)s.SelectedPowerAction;
 
         // Wake-Up Greeting
@@ -410,6 +416,7 @@ public partial class SettingsFlyout : UserControl
             3 => PowerAction.Restart,
             4 => PowerAction.ForceShutdown,
             5 => PowerAction.ForceRestart,
+            6 => PowerAction.Lock,
             _ => PowerAction.Sleep
         };
 
