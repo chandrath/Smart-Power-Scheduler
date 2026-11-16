@@ -87,4 +87,4 @@ All project metadata, versioning, default parameters, and threshold limits are c
 
 ## 📄 License
 
-GNU General Public License v3.0 (GPL-3.0). Copyright © 2026 Appsphinx.
+GNU General Public License v3.0 (GPL-3.0)
