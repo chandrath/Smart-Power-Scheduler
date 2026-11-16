@@ -56,6 +56,10 @@ public partial class MainWindow : Window
 
         HistoryService.ReconcilePendingStartupSessions();
         CheckForSleepBlockers(isStartup: true);
+        if (App.Settings.CheckForUpdatesOnStartup)
+        {
+            CheckForAppUpdatesSilently();
+        }
         Task.Delay(1500).ContinueWith(_ => Dispatcher.Invoke(MemoryService.TrimWorkingSet));
 
         if (_launchOverrides != null && _launchOverrides.HasOverrides)
@@ -502,4 +506,35 @@ public partial class MainWindow : Window
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; MemoryService.TrimWorkingSet(); }
     private void CloseWindowButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    private string? _pendingUpdateUrl;
+
+    private void CheckForAppUpdatesSilently()
+    {
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(2500); // Non-blocking delay after launch
+            var result = await UpdateService.CheckForUpdatesAsync();
+            if (result.IsSuccess && result.IsUpdateAvailable)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    _pendingUpdateUrl = result.ReleaseUrl;
+                    UpdateBannerText.Text = $"✨ Update available: v{result.LatestVersion}";
+                    UpdateBanner.Visibility = Visibility.Visible;
+                });
+            }
+        });
+    }
+
+    private void UpdateBannerDownloadButton_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateService.OpenReleaseUrl(_pendingUpdateUrl ?? "");
+        UpdateBanner.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateBannerDismissButton_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateBanner.Visibility = Visibility.Collapsed;
+    }
 }

@@ -50,7 +50,9 @@
       "nosleep",
       "stayawake",
       "amphetamine"
-    ]
+    ],
+    "CheckForUpdatesOnStartup": true,
+    "UpdateApiEndpoint": "https://api.github.com/repos/chandrath/Smart-Sleep-Scheduler/releases/latest"
   },
   "StreamDeck": {
     "PluginUUID": "com.appsphinx.smartpowerscheduler.sdPlugin",

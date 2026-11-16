@@ -126,6 +126,12 @@ public partial class SettingsFlyout : UserControl
         PeriodicScanIntervalPanel.Visibility = s.PeriodicBlockerScanEnabled ? Visibility.Visible : Visibility.Collapsed;
         PeriodicScanIntervalCombo.SelectedIndex = s.PeriodicBlockerScanIntervalSeconds switch { 5 => 0, 10 => 1, 15 => 2, 20 => 3, 30 => 4, 60 => 5, _ => 0 };
 
+        // Updates
+        CheckUpdatesOnLaunchCheck.IsChecked = s.CheckForUpdatesOnStartup;
+        UpdateStatusText.Text = $"Current: v{cfg.App.Version}";
+        CheckForUpdatesButton.Content = "Check for Updates";
+        _discoveredUpdateUrl = null;
+
         RefreshHistoryView();
         UpdateShortcutPreview();
     }
@@ -273,6 +279,7 @@ public partial class SettingsFlyout : UserControl
         s.BlockerAlertSoundEnabled = BlockerAlertSoundCheck.IsChecked ?? true;
         s.PeriodicBlockerScanEnabled = PeriodicBlockerScanCheck.IsChecked ?? false;
         s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch { 0 => 5, 1 => 10, 2 => 15, 3 => 20, 4 => 30, 5 => 60, _ => 5 };
+        s.CheckForUpdatesOnStartup = CheckUpdatesOnLaunchCheck.IsChecked ?? true;
 
         s.Save();
         SettingsChanged?.Invoke();
@@ -301,6 +308,7 @@ public partial class SettingsFlyout : UserControl
         s.BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
         s.PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
         s.PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds;
+        s.CheckForUpdatesOnStartup = defaults.CheckForUpdatesOnStartup;
 
         s.Save();
         LoadValues();
@@ -344,6 +352,43 @@ public partial class SettingsFlyout : UserControl
             }
         }
         catch { }
+    }
+
+    private string? _discoveredUpdateUrl;
+
+    private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_discoveredUpdateUrl))
+        {
+            UpdateService.OpenReleaseUrl(_discoveredUpdateUrl);
+            return;
+        }
+
+        CheckForUpdatesButton.IsEnabled = false;
+        UpdateStatusText.Text = "Checking GitHub for updates...";
+
+        var result = await UpdateService.CheckForUpdatesAsync();
+
+        CheckForUpdatesButton.IsEnabled = true;
+
+        if (!result.IsSuccess)
+        {
+            UpdateStatusText.Text = string.IsNullOrEmpty(result.ErrorMessage)
+                ? "Could not check updates."
+                : result.ErrorMessage;
+            return;
+        }
+
+        if (result.IsUpdateAvailable)
+        {
+            _discoveredUpdateUrl = result.ReleaseUrl;
+            UpdateStatusText.Text = $"✨ New version v{result.LatestVersion} available!";
+            CheckForUpdatesButton.Content = "⬇️ Download";
+        }
+        else
+        {
+            UpdateStatusText.Text = $"You're up to date! (v{result.CurrentVersion})";
+        }
     }
 
     private void RefreshHistoryView()

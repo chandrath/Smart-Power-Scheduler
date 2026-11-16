@@ -23,6 +23,8 @@
                 <Grid.RowDefinitions>
                     <!-- Custom Title Bar -->
                     <RowDefinition Height="48" />
+                    <!-- Update Banner (Auto: 0 height when collapsed) -->
+                    <RowDefinition Height="Auto" />
                     <!-- Countdown Display Area (Scales in Viewbox) -->
                     <RowDefinition Height="*" />
                     <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] -->
@@ -104,15 +106,61 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Row 1: Update Available Banner (Non-intrusive) -->
+                <Border x:Name="UpdateBanner"
+                        Grid.Row="1"
+                        Background="{DynamicResource CardBackgroundBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="16,0,16,8"
+                        Padding="10,6"
+                        Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="✨" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock x:Name="UpdateBannerText"
+                                       Text="New version available!"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button x:Name="UpdateBannerDownloadButton"
+                                Grid.Column="1"
+                                Content="Download"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Padding="10,4"
+                                FontSize="11"
+                                Margin="8,0,6,0"
+                                Click="UpdateBannerDownloadButton_Click" />
+                        <Button x:Name="UpdateBannerDismissButton"
+                                Grid.Column="2"
+                                Content="✕"
+                                Style="{StaticResource IconButtonStyle}"
+                                Width="22"
+                                Height="22"
+                                Padding="0"
+                                FontSize="10"
+                                ToolTip="Dismiss"
+                                Click="UpdateBannerDismissButton_Click" />
+                    </Grid>
+                </Border>
+
                 <!-- Center: Countdown Ring Display (Scales Responsively in Viewbox) -->
-                <Grid Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="16,2,16,8">
+                <Grid Grid.Row="2" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="16,2,16,8">
                     <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <controls:CountdownDisplay x:Name="CountdownControl" />
                     </Viewbox>
                 </Grid>
 
                 <!-- Middle Stepper Row: [ -1m ] [ +1m ] [ ✏️ ] [ ↺ ] -->
-                <Grid Grid.Row="2" HorizontalAlignment="Center" Margin="0,0,0,16">
+                <Grid Grid.Row="3" HorizontalAlignment="Center" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <!-- -1m Button (Grayed out & disabled when at 1 min) -->
                         <Button x:Name="MinusOneButton"
@@ -178,7 +226,7 @@
                 </Grid>
 
                 <!-- Bottom Control Bar: Hero Full-Width [ START / STOP ] -->
-                <Border Grid.Row="3"
+                <Border Grid.Row="4"
                         Background="{DynamicResource CardBackgroundBrush}"
                         BorderBrush="{DynamicResource CardBorderBrush}"
                         BorderThickness="0,1,0,0"

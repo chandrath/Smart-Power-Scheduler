@@ -35,6 +35,7 @@ public sealed class UserSettings
     public int PeriodicBlockerScanIntervalSeconds { get; set; }
     public bool BlockerAlertSoundEnabled { get; set; }
     public bool StartupBlockerAlertSoundEnabled { get; set; }
+    public bool CheckForUpdatesOnStartup { get; set; }
 
     public UserSettings()
     {
@@ -56,6 +57,7 @@ public sealed class UserSettings
         PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds > 0 ? defaults.PeriodicBlockerScanIntervalSeconds : 5;
         BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
         StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
+        CheckForUpdatesOnStartup = defaults.CheckForUpdatesOnStartup;
     }
 
     public static string GetSettingsDirectory() => SettingsDirectory;
