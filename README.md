@@ -1,6 +1,13 @@
-# Smart Power Scheduler (Windows)
+<div align="center">
+  <img src="docs/assets/icon.png" alt="Smart Power Scheduler Icon" width="96" height="96" />
+  <h1>Smart Power Scheduler</h1>
+  <p><b>The ultimate power & sleep timer for Windows.</b></p>
+  <p>A clean, compact power timer for Windows that puts your PC to sleep, hibernates, shuts down, locks, or restarts on your schedule.</p>
+</div>
 
-A clean, compact power timer for Windows that puts your PC to sleep, hibernates, shuts down, locks, or restarts on your schedule.
+<p align="center">
+  <img src="docs/assets/preview.jpg" alt="Smart Power Scheduler Feature Showcase" width="520" />
+</p>
 
 ---
 
