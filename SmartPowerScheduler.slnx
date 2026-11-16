@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Smart-Power-Scheduler-Win/">
+    <Project Path="src/Smart-Power-Scheduler-Win/SmartPowerScheduler.csproj" />
+  </Folder>
+  <Folder Name="/src/Smart-Power-Scheduler-Win/StreamDeck.Plugin/">
+    <Project Path="src/Smart-Power-Scheduler-Win/StreamDeck.Plugin/SmartPowerScheduler.StreamDeck.csproj" />
+  </Folder>
+</Solution>

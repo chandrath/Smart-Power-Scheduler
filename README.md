@@ -1,20 +1,17 @@
-# Smart Sleep Scheduler (Windows)
+# Smart Power Scheduler (Windows)
 
-A clean, compact, modern Windows Smart Sleep Scheduler built with **C# and .NET 10** using **WPF**, featuring a Fluent translucent design (Windows 11 Mica & Windows 10 Acrylic), accurate non-drifting timing, safe Windows power transitions, and a Single Source of Truth (SSOT) architecture.
+A clean, compact power timer for Windows that puts your PC to sleep, hibernates, shuts down, locks, or restarts on your schedule.
 
 ---
 
 ## ✨ Features
 
-- **Fluent Translucent Design**: Native Windows 11 Mica and Windows 10 Acrylic backdrop support with smooth dark, light, and Windows system auto theme detection (Dark mode by default).
-- **Safe by Default**: Requests Windows Sleep (S3 / Modern Standby) safely via native Windows power APIs without killing running apps or forcing critical suspension.
-- **Advanced Power Actions**: Advanced users can opt into Hibernate, Graceful Shutdown, Graceful Restart, or Super Force Shutdown / Restart via the settings panel with safety warnings.
-- **Accurate Timing**: Calculates remaining time against absolute UTC timestamps, ensuring zero timer drift even when minimized or throttled by Windows.
-- **Auto-Start on Launch**: Automatically starts a 1-minute countdown on application launch (configurable in preferences).
-- **Visual Urgency Warning**: Displays a subtle pulsing red glow in the final 30 seconds before sleep is initiated.
-- **Always on Top & Fullscreen**: Handy top-bar pin toggle (active by default) and full-screen mode (<kbd>F11</kbd>).
-- **Single Instance Guard**: Prevents multiple competing sleep schedules from running simultaneously.
-- **Zero Runtime Dependencies**: Published as a self-contained single-file executable that runs without requiring a pre-installed .NET runtime.
+- **Flexible Power Timers**: Set a countdown to **Sleep**, **Hibernate**, **Shut Down**, **Lock**, or **Restart** (with optional **Force** modes for stubborn programs). Includes customizable audio alerts so you know when the timer is winding down.
+- **Easy to Pause or Cancel**: Plans change? Pause or stop the countdown at any time with a single click. A soft red pulsing glow warns you in the final 30 seconds so nothing happens by surprise.
+- **Built-in Elgato Stream Deck Plugin**: Included right inside the installer—no separate downloads or third-party stores needed. See the live countdown and trigger routines directly with hardware buttons.
+- **1-Click Desktop Shortcuts**: Skip opening the app and adjusting sliders every day. Create custom desktop shortcuts for your daily routines (e.g., *"Sleep in 5m"*) and launch them straight from your desktop, taskbar, or Start Menu.
+- **Sleep Blocker Detection**: Warns you if background tools like **DontSleep**, **Caffeine**, or **PowerToys Awake** are secretly preventing Windows from sleeping.
+- **Clean Windows Design**: Modern Fluent interface supporting Windows 11 Mica and Windows 10 Acrylic, with automatic Dark/Light theme switching.
 
 ---
 
@@ -28,77 +25,53 @@ A clean, compact, modern Windows Smart Sleep Scheduler built with **C# and .NET 
 
 ---
 
-## 🏗️ Architecture & Single Source of Truth (SSOT)
+## ⚡ Quick Shortcut & CLI Presets
 
-All project metadata, versioning, default parameters, and threshold limits are managed in a single central JSON file:
+You can run `SmartPowerScheduler.exe` directly with flags or bind them to desktop shortcuts:
 
-📁 **`src/Smart-Sleep-Scheduler-Win/Config/DevConfig.json`**
-
-```json
-{
-  "App": {
-    "Name": "SmartSleepScheduler",
-    "DisplayName": "Smart Sleep Scheduler",
-    "Version": "0.9.0.1",
-    "Vendor": "SmartSleep",
-    "AppId": "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B"
-  },
-  "Defaults": {
-    "Theme": "Dark",
-    "AlwaysOnTop": true,
-    "DefaultTimerDurationSeconds": 180,
-    "AutoStartOnLaunch": true,
-    "AutoStartDurationSeconds": 60,
-    "DefaultPowerAction": "Sleep",
-    "MinTimerSeconds": 1,
-    "MaxTimerSeconds": 43200,
-    "UrgencyWarningThresholdSeconds": 30
-  }
-}
-```
-
-Updating `DevConfig.json` automatically updates:
-1. The C# runtime (`AppConfig.Instance`) and UI About section.
-2. The Inno Setup installer script (`installer.iss`).
-3. The build script (`build.ps1`) and output artifact naming.
-
----
-
-## 📦 Distribution & Release Artifacts
-
-The automated pipeline produces 4 release targets:
-
-| Artifact | Type | Description |
+| Routine | Example Command | Description |
 | :--- | :--- | :--- |
-| `SmartSleepScheduler-v0.9.0.1-win-x64-Setup.exe` | Installer | Self-contained Inno Setup installer (No .NET required) |
-| `SmartSleepScheduler-v0.9.0.1-win-x64-Portable.zip` | Portable | Self-contained single-file portable archive |
-| `SmartSleepScheduler-v0.9.0.1-win-x64-Setup-ReqDotNet10.exe` | Installer | Lightweight installer (Requires .NET 10 runtime) |
-| `SmartSleepScheduler-v0.9.0.1-win-x64-Portable-ReqDotNet10.zip` | Portable | Ultra-compact single-file portable archive (Requires .NET 10) |
+| **Quick Sleep** | `SmartPowerScheduler.exe --action sleep --time 5m --sound on` | Sleeps PC in 5 minutes with audio alert |
+| **Emergency Off** | `SmartPowerScheduler.exe --action force-shutdown --time 15s` | Bypasses stuck apps & shuts down immediately |
+| **Workstation Lock** | `SmartPowerScheduler.exe --action lock --time 10m` | Locks Windows in 10 minutes |
+| **Silent Night** | `SmartPowerScheduler.exe --action sleep --time 1h --mute` | Runs silently without ticking or alarms |
 
 ---
 
-## 🚀 Building Locally
+## 📥 Download & Installation
 
-Run the release pipeline directly using PowerShell:
+Grab the latest release from the [Releases page](https://github.com/chandrath/Smart-Sleep-Scheduler/releases):
+- **Installer (`Setup.exe`)**: Recommended. Bundles the Stream Deck plugin and desktop integration.
+- **Portable (`.zip`)**: Zero installation required, runs standalone.
+
+---
+
+<details>
+<summary>🛠️ <b>Developer & Build Instructions</b></summary>
+
+### Building Locally
+
+Run the build pipeline using PowerShell:
 
 ```powershell
-# Build using version from DevConfig.json:
+# Automatically builds release packages using the version from DevConfig.json:
 .\build.ps1
 
-# Or specify a version tag:
-.\build.ps1 -VersionTag "v0.9.0.1"
+# (Optional) Override version tag manually:
+.\build.ps1 -VersionTag "vX.Y.Z"
 ```
 
 All compiled packages will be placed into the `artifacts/` directory with generated SHA256 checksums.
 
----
+### Architecture & Single Source of Truth (SSOT)
 
-## 🤖 GitHub Actions CI/CD
+All project metadata, versioning, default parameters, and threshold limits are centrally managed in:
+📁 `src/Smart-Power-Scheduler-Win/Config/DevConfig.json`
 
-Pushing any git tag matching `v*` (e.g. `git tag v0.9.0.1 && git push origin v0.9.0.1`) automatically triggers `.github/workflows/release.yml`, building all 4 binaries and creating a GitHub Release.
+</details>
 
 ---
 
 ## 📄 License
 
-MIT License. Copyright © 2026 SmartSleep.
+GNU General Public License v3.0 (GPL-3.0). Copyright © 2026 Appsphinx.

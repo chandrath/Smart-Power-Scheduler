@@ -1,0 +1,142 @@
+<UserControl x:Class="SmartPowerScheduler.UI.Views.WakeUpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="380" d:DesignWidth="360">
+
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Border Background="{DynamicResource SolidCardBackgroundBrush}"
+                BorderBrush="{DynamicResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="24"
+                Width="350">
+            <StackPanel HorizontalAlignment="Center">
+                <!-- Glowing Sunrise Badge (High-Contrast Amber/Gold) -->
+                <Border Width="60" Height="60"
+                        CornerRadius="30"
+                        Background="#25F59E0B"
+                        BorderBrush="#4DF59E0B"
+                        BorderThickness="1.5"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,12">
+                    <Viewbox Width="32" Height="32">
+                        <Canvas Width="24" Height="24">
+                            <!-- Sun Rays and Horizon Line -->
+                            <Path Stroke="#F59E0B" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M12 2v4M4.93 6.93l2.83 2.83M19.07 6.93l-2.83 2.83M2 16h2M20 16h2M2 20h20M7 16a5 5 0 0 1 10 0" />
+                            <!-- Rising Sun Semi-Circle -->
+                            <Path Fill="#F59E0B" Opacity="0.85"
+                                  Data="M7 16a5 5 0 0 1 10 0Z" />
+                        </Canvas>
+                    </Viewbox>
+                </Border>
+
+                <!-- Welcome Title -->
+                <TextBlock x:Name="TitleText"
+                           Text="Welcome Back, Sleepyhead!"
+                           FontSize="19"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+
+                <!-- Friendly Subtitle -->
+                <TextBlock x:Name="SubtitleText"
+                           Text="Your PC just enjoyed a refreshing power nap."
+                           FontSize="12"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Margin="0,8,0,20"
+                           FontFamily="Segoe UI Variable Text, Segoe UI, sans-serif" />
+
+                <!-- Stepper Label -->
+                <TextBlock Text="Next Session Duration"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Margin="0,0,0,8" />
+
+                <!-- Interactive Duration Stepper -->
+                <Border Background="{DynamicResource ButtonBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="6,4"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,24">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Decrease Button -->
+                        <Button x:Name="DecreaseButton"
+                                Content="▼"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Width="36" Height="36"
+                                Padding="0"
+                                Click="DecreaseButton_Click"
+                                ToolTip="Decrease by 1 minute" />
+
+                        <!-- Duration Display -->
+                        <TextBlock x:Name="DurationDisplayText"
+                                   Text="01:00"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   Width="100"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+
+                        <!-- Increase Button -->
+                        <Button x:Name="IncreaseButton"
+                                Content="▲"
+                                Style="{StaticResource FluentButtonStyle}"
+                                Width="36" Height="36"
+                                Padding="0"
+                                Click="IncreaseButton_Click"
+                                ToolTip="Increase by 1 minute" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Two Big Action Buttons (Side by Side) -->
+                <Grid Width="300">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Start Again Button (Subtle Secondary) -->
+                    <Button x:Name="StartAgainButton"
+                            Grid.Column="0"
+                            Content="Start Again"
+                            Style="{StaticResource FluentButtonStyle}"
+                            Height="44"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            Click="StartAgainButton_Click"
+                            ToolTip="Start new sleep countdown" />
+
+                    <!-- Exit Button (Highlighted Hero Action) -->
+                    <Button x:Name="ExitButton"
+                            Grid.Column="2"
+                            Content="Exit"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Height="44"
+                            FontSize="14"
+                            FontWeight="Bold"
+                            Click="ExitButton_Click"
+                            ToolTip="Close the application" />
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
+

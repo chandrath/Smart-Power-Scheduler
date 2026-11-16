@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Automated Production Build & Packaging Script for Smart Sleep Scheduler.
+    Automated Production Build & Packaging Script for Smart Power Scheduler.
     Reads Single Source of Truth (SSOT) from DevConfig.json.
     Produces 4 standard release artifacts:
       1. {AppName}-v{Version}-win-x64-Setup.exe
@@ -19,13 +19,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 $rootDir = $PSScriptRoot
-$srcDir = Join-Path $rootDir "src\Smart-Sleep-Scheduler-Win"
+$srcDir = Join-Path $rootDir "src\Smart-Power-Scheduler-Win"
 $configPath = Join-Path $srcDir "Config\DevConfig.json"
 $artifactsDir = Join-Path $rootDir "artifacts"
 $tempPublishDir = Join-Path $rootDir ".temp_publish"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  Smart Sleep Scheduler - Production Release Pipeline" -ForegroundColor Cyan
+Write-Host "  Smart Power Scheduler - Production Release Pipeline" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Read Single Source of Truth (SSOT)
@@ -63,8 +63,8 @@ New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
 $selfContainedDir = Join-Path $tempPublishDir "SelfContained"
 $frameworkDepDir = Join-Path $tempPublishDir "FrameworkDependent"
 
-$streamDeckProj = Join-Path $srcDir "StreamDeck.Plugin\SmartSleepScheduler.StreamDeck.csproj"
-$streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartsleepscheduler.sdPlugin"
+$streamDeckProj = Join-Path $srcDir "StreamDeck.Plugin\SmartPowerScheduler.StreamDeck.csproj"
+$streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartpowerscheduler.sdPlugin"
 
 $selfContainedSDDir = Join-Path $tempPublishDir "StreamDeckSelfContained"
 $frameworkDepSDDir = Join-Path $tempPublishDir "StreamDeckFrameworkDep"
@@ -75,7 +75,7 @@ Copy-Item -Path $streamDeckPluginSrc -Destination $frameworkDepSDDir -Recurse -F
 
 # 3. Publish Self-Contained Win-x64
 Write-Host "`n[1/4] Publishing Self-Contained Win-x64 build..." -ForegroundColor Magenta
-dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
+dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
     -c Release `
     -r win-x64 `
     --self-contained true `
@@ -98,7 +98,7 @@ dotnet publish $streamDeckProj `
 
 # 4. Publish Framework-Dependent Win-x64 (Requires .NET 10)
 Write-Host "`n[2/4] Publishing Framework-Dependent Win-x64 build..." -ForegroundColor Magenta
-dotnet publish "$srcDir\SmartSleepScheduler.csproj" `
+dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
     -c Release `
     -r win-x64 `
     --no-self-contained `
@@ -122,7 +122,7 @@ dotnet publish $streamDeckProj `
 # 5. Create Portable ZIP Archives (includes optional StreamDeck plugin bundle)
 Write-Host "`n[3/4] Packaging Portable ZIP archives..." -ForegroundColor Magenta
 
-$sdPortableSelfContained = Join-Path $selfContainedDir "StreamDeck\com.appsphinx.smartsleepscheduler.sdPlugin"
+$sdPortableSelfContained = Join-Path $selfContainedDir "StreamDeck\com.appsphinx.smartpowerscheduler.sdPlugin"
 New-Item -ItemType Directory -Path (Split-Path $sdPortableSelfContained -Parent) -Force | Out-Null
 Copy-Item -Path $selfContainedSDDir -Destination $sdPortableSelfContained -Recurse -Force
 
@@ -130,7 +130,7 @@ $portableZip = Join-Path $artifactsDir "$appName-v$appVersion-win-x64-Portable.z
 Write-Host "Creating: $(Split-Path $portableZip -Leaf)"
 Compress-Archive -Path "$selfContainedDir\*" -DestinationPath $portableZip -CompressionLevel Optimal
 
-$sdPortableFrameworkDep = Join-Path $frameworkDepDir "StreamDeck\com.appsphinx.smartsleepscheduler.sdPlugin"
+$sdPortableFrameworkDep = Join-Path $frameworkDepDir "StreamDeck\com.appsphinx.smartpowerscheduler.sdPlugin"
 New-Item -ItemType Directory -Path (Split-Path $sdPortableFrameworkDep -Parent) -Force | Out-Null
 Copy-Item -Path $frameworkDepSDDir -Destination $sdPortableFrameworkDep -Recurse -Force
 

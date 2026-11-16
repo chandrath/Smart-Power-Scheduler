@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 :: Build if needed (quiet Release build)
-dotnet build "%~dp0src\Smart-Sleep-Scheduler-Win\SmartSleepScheduler.csproj" -c Release --nologo -v q
+dotnet build "%~dp0src\Smart-Power-Scheduler-Win\SmartPowerScheduler.csproj" -c Release --nologo -v q
 if errorlevel 1 (
     echo.
     echo [ERROR] Build failed. Check the error output above.
@@ -20,5 +20,5 @@ if errorlevel 1 (
 )
 
 :: Launch detached GUI process and close terminal window immediately
-start "" "%~dp0src\Smart-Sleep-Scheduler-Win\bin\Release\net10.0-windows\SmartSleepScheduler.exe"
+start "" "%~dp0src\Smart-Power-Scheduler-Win\bin\Release\net10.0-windows\SmartPowerScheduler.exe"
 exit /b 0
