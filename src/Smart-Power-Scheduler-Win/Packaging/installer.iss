@@ -41,11 +41,13 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyPublisher}\{#MyAppName}
+UsePreviousAppDir=no
 DisableProgramGroupPage=yes
 OutputBaseFilename={#OutputBaseFilename}
 OutputDir={#OutputDir}
 SetupIconFile=..\Assets\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallDisplayName={#MyAppName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -77,8 +79,8 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Components: main; Flags: ignoreversi
 Source: "{#StreamDeckPluginDir}\*"; DestDir: "{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartpowerscheduler.sdPlugin"; Components: streamdeck; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

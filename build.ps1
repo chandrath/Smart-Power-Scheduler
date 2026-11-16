@@ -50,6 +50,12 @@ if (![string]::IsNullOrWhiteSpace($VersionTag)) {
     }
 }
 
+# 2. Synchronize Icon Pipeline from SSOT master-icon.png
+$iconPipeline = Join-Path $srcDir "Assets\Update-Icons.ps1"
+if (Test-Path $iconPipeline) {
+    & $iconPipeline
+}
+
 Write-Host "App Name:        $appName ($appDisplayName)" -ForegroundColor Green
 Write-Host "App Version:     $appVersion" -ForegroundColor Green
 Write-Host "Vendor:          $appVendor" -ForegroundColor Green

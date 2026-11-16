@@ -53,14 +53,36 @@ public static class Program
         // 1. Start IPC State Pipe Monitor in Background
         _ = Task.Run(() => MonitorAppStateAsync(cts.Token));
 
-        // 2. Connect to Elgato Stream Deck WebSocket Host
+        // 2. Connect to Elgato Stream Deck WebSocket Host with retry
         try
         {
-            _ws = new ClientWebSocket();
             var uri = new Uri($"ws://127.0.0.1:{port}");
             Log($"Connecting to WebSocket {uri}...");
-            await _ws.ConnectAsync(uri, cts.Token);
-            Log("WebSocket connected.");
+
+            bool connected = false;
+            for (int attempt = 1; attempt <= 10; attempt++)
+            {
+                try
+                {
+                    _ws = new ClientWebSocket();
+                    _ws.Options.Proxy = null;
+                    await _ws.ConnectAsync(uri, cts.Token);
+                    connected = true;
+                    Log("WebSocket connected.");
+                    break;
+                }
+                catch (Exception connEx)
+                {
+                    Log($"WebSocket attempt {attempt}/10 failed: {connEx}. Retrying...");
+                    await Task.Delay(500, cts.Token);
+                }
+            }
+
+            if (!connected || _ws == null)
+            {
+                Log("Failed to connect to Stream Deck WebSocket after 10 attempts. Exiting.");
+                return;
+            }
 
             var regPayload = JsonSerializer.Serialize(new { @event = registerEvent, uuid = pluginUuid });
             Log($"Sending register payload: {regPayload}");
@@ -188,7 +210,7 @@ public static class Program
             string d = settings["duration"]!.ToString().Trim();
             if (!string.IsNullOrEmpty(d))
             {
-                d = char.IsDigit(d[^1]) ? $"{d}m" : d;
+                d = char.IsDigit(d[d.Length - 1]) ? $"{d}m" : d;
                 cfg.Duration = ClampDurationString(d);
             }
         }
@@ -326,14 +348,17 @@ public static class Program
 
         // 4. Standard install directories & development repo builds
         string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+
         string[] candidates =
         [
             Path.Combine(baseDir, "SmartPowerScheduler.exe"),
             Path.Combine(baseDir, "..", "SmartPowerScheduler.exe"),
             Path.Combine(baseDir, "..", "..", "SmartPowerScheduler.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Appsphinx", "Smart Power Scheduler", "SmartPowerScheduler.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Appsphinx", "Smart Power Scheduler", "SmartPowerScheduler.exe"),
-            @"C:\GitHub\_2026\Smart-Power-Scheduler\src\Smart-Power-Scheduler-Win\bin\Release\net10.0-windows\SmartPowerScheduler.exe"
+            Path.Combine(localApp, "Programs", "Appsphinx", "Smart Power Scheduler", "SmartPowerScheduler.exe"),
+            Path.Combine(localApp, "Appsphinx", "Smart Power Scheduler", "SmartPowerScheduler.exe"),
+            Path.Combine(progFiles, "Appsphinx", "Smart Power Scheduler", "SmartPowerScheduler.exe")
         ];
 
         foreach (var c in candidates)
@@ -362,7 +387,7 @@ public static class Program
                 using var reader = new StreamReader(pipeClient, Encoding.UTF8);
                 while (!ct.IsCancellationRequested)
                 {
-                    string? line = await reader.ReadLineAsync(ct);
+                    string? line = await reader.ReadLineAsync();
                     if (line == null) break;
                     if (string.IsNullOrWhiteSpace(line)) continue;
 

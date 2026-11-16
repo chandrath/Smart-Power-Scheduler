@@ -61,7 +61,9 @@ public partial class SettingsFlyout : UserControl
         // About section (Single Source of Truth)
         AboutAppNameText.Text = cfg.App.DisplayName;
         AboutVersionText.Text = $"v{cfg.App.Version}";
-        AboutCopyrightText.Text = $"{cfg.App.Copyright} • {cfg.App.Vendor}";
+        AboutDeveloperText.Text = $"Developer: {cfg.App.Developer}";
+        AboutVendorText.Text = cfg.App.Vendor;
+        AboutCopyrightText.Text = cfg.App.Copyright;
         AboutDescText.Text = cfg.App.Description;
 
         // Elevation Status
@@ -329,6 +331,19 @@ public partial class SettingsFlyout : UserControl
     private void RelaunchAdminButton_Click(object sender, RoutedEventArgs e)
     {
         SleepBlockerService.RelaunchAsAdministrator();
+    }
+
+    private void OpenGitHubButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var url = AppConfig.Instance.App.RepositoryUrl;
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+            }
+        }
+        catch { }
     }
 
     private void RefreshHistoryView()

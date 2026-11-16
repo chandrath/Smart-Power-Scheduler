@@ -64,6 +64,7 @@ public sealed class AppMetadata
     public string Description { get; set; } = "A clean, modern Windows smart power timer and scheduler with Fluent translucent design.";
     public string Version { get; set; } = "0.9.0.3";
     public string Vendor { get; set; } = "Appsphinx";
+    public string Developer { get; set; } = "Shree";
     public string Copyright { get; set; } = "Copyright © 2026 Appsphinx";
     public string AppId { get; set; } = "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B";
     public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Sleep-Scheduler";

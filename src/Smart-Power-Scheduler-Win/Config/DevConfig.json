@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "_guidance": {
-    "developerNote": "SINGLE SOURCE OF TRUTH (SSOT): All default configurations, metadata, versioning, and limits are managed here. The build scripts (build.ps1, release.yml) and C# runtime dynamically read from this file. To update version or branding across the entire project (builds, Inno Setup, about dialog), modify the values below."
+    "developerNote": "SINGLE SOURCE OF TRUTH (SSOT): All default configurations, metadata, versioning, and limits are managed here. The build scripts (build.ps1, release.yml) and C# runtime dynamically read from this file. To update version or branding, modify the values below. To update icons, replace Assets/master-icon.png (512x512) and run build.ps1 or Assets/Update-Icons.ps1."
   },
   "App": {
     "Name": "SmartPowerScheduler",
@@ -9,6 +9,7 @@
     "Description": "A clean, modern Windows smart power timer and scheduler with Fluent translucent design.",
     "Version": "0.9.0.3",
     "Vendor": "Appsphinx",
+    "Developer": "Shree",
     "Copyright": "Copyright © 2026 Appsphinx",
     "AppId": "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B",
     "RepositoryUrl": "https://github.com/chandrath/Smart-Sleep-Scheduler"
