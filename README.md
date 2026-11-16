@@ -32,7 +32,7 @@
 
 ---
 
-## ⚡ Quick Shortcut & CLI Presets
+## ⚡ Quick Shortcut
 
 You can run `SmartPowerScheduler.exe` directly with flags or bind them to desktop shortcuts:
 
