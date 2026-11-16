@@ -66,10 +66,14 @@ public partial class CountdownDisplay : UserControl
     {
         _currentState = state;
 
-        // 1. Format Time Display
-        string formattedTime = remaining.TotalHours >= 1
-            ? remaining.ToString(@"hh\:mm\:ss")
-            : remaining.ToString(@"mm\:ss");
+        // 1. Format Time Display (Use Math.Ceiling for active/paused timer to match companion displays like Stream Deck)
+        TimeSpan displayTime = (state == TimerState.Running || state == TimerState.Paused)
+            ? TimeSpan.FromSeconds(Math.Max(0, Math.Ceiling(remaining.TotalSeconds)))
+            : remaining;
+
+        string formattedTime = displayTime.TotalHours >= 1
+            ? displayTime.ToString(@"hh\:mm\:ss")
+            : displayTime.ToString(@"mm\:ss");
 
         TimeText.Text = formattedTime;
         if (TimeEditBox.Visibility != Visibility.Visible)

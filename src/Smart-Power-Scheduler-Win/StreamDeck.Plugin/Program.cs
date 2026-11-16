@@ -482,7 +482,11 @@ public static class Program
             SetImage(context, b64);
         }
 
-        SetTitle(context, title);
+        if (config.LastAppliedTitle != title)
+        {
+            config.LastAppliedTitle = title;
+            SetTitle(context, title);
+        }
     }
 
     private static string ClampDurationString(string raw)
@@ -520,4 +524,5 @@ public sealed class KeyConfig
     public string Action { get; set; } = "Sleep"; public string Duration { get; set; } = "10s";
     public bool SoundEnabled { get; set; } = true; public string? CustomTitle { get; set; }
     public string? LastAppliedImageKey { get; set; }
+    public string? LastAppliedTitle { get; set; }
 }

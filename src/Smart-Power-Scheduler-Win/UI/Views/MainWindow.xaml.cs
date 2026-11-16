@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private bool _blockerWarningDismissed;
     private string? _currentBlockerName;
     private int _lastMilestoneChecked = -1;
+    private int _lastBroadcastSecs = -1;
     private readonly LaunchOverrides? _launchOverrides;
 
     public MainWindow(LaunchOverrides? overrides = null)
@@ -126,9 +127,14 @@ public partial class MainWindow : Window
         if (_timerService.State == TimerState.Running)
         {
             UpdateDisplay(remaining);
-            IpcService.BroadcastState(TimerStateSnapshot.Running(App.Settings.SelectedPowerAction.ToString(), (int)Math.Ceiling(remaining.TotalSeconds), (int)_readyDuration.TotalSeconds));
 
             int remainingSecs = (int)Math.Ceiling(remaining.TotalSeconds);
+            if (remainingSecs != _lastBroadcastSecs)
+            {
+                _lastBroadcastSecs = remainingSecs;
+                IpcService.BroadcastState(TimerStateSnapshot.Running(App.Settings.SelectedPowerAction.ToString(), remainingSecs, (int)_readyDuration.TotalSeconds));
+            }
+
             if (remainingSecs != _lastMilestoneChecked)
             {
                 bool shouldCheck = false;
@@ -158,6 +164,7 @@ public partial class MainWindow : Window
 
     private void OnTimerStateChanged(TimerState state)
     {
+        _lastBroadcastSecs = -1;
         string act = App.Settings.SelectedPowerAction.ToString();
         int rem = (int)Math.Ceiling(_timerService.RemainingTime.TotalSeconds), total = (int)_readyDuration.TotalSeconds;
         if (state == TimerState.Running)
