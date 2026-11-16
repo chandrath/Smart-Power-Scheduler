@@ -2,11 +2,9 @@
 .SYNOPSIS
     Automated Production Build & Packaging Script for Smart Power Scheduler.
     Reads Single Source of Truth (SSOT) from DevConfig.json.
-    Produces 4 standard release artifacts:
-      1. {AppName}-v{Version}-win-x64-Setup.exe
-      2. {AppName}-v{Version}-win-x64-Portable.zip
-      3. {AppName}-v{Version}-win-x64-Setup-ReqDotNet10.exe
-      4. {AppName}-v{Version}-win-x64-Portable-ReqDotNet10.zip
+    Produces standard release installer artifacts:
+      1. {AppName}-v{Version}-win-x64-Setup.exe (Self-contained, recommended)
+      2. {AppName}-v{Version}-win-x64-Setup-ReqDotNet10.exe (Framework-dependent)
 
 .PARAMETER VersionTag
     Optional git tag override (e.g. "v0.9.0.1" or "0.9.0.1").
@@ -61,10 +59,16 @@ Write-Host "App Version:     $appVersion" -ForegroundColor Green
 Write-Host "Vendor:          $appVendor" -ForegroundColor Green
 
 # 2. Clean and prepare output directories
-if (Test-Path $artifactsDir) { Remove-Item -Recurse -Force $artifactsDir }
-if (Test-Path $tempPublishDir) { Remove-Item -Recurse -Force $tempPublishDir }
-New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
-New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
+if (Test-Path $artifactsDir) {
+    Get-ChildItem -Path $artifactsDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} else {
+    New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
+}
+if (Test-Path $tempPublishDir) {
+    Get-ChildItem -Path $tempPublishDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} else {
+    New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
+}
 
 $selfContainedDir = Join-Path $tempPublishDir "SelfContained"
 $frameworkDepDir = Join-Path $tempPublishDir "FrameworkDependent"
@@ -80,7 +84,7 @@ Copy-Item -Path $streamDeckPluginSrc -Destination $selfContainedSDDir -Recurse -
 Copy-Item -Path $streamDeckPluginSrc -Destination $frameworkDepSDDir -Recurse -Force
 
 # 3. Publish Self-Contained Win-x64
-Write-Host "`n[1/4] Publishing Self-Contained Win-x64 build..." -ForegroundColor Magenta
+Write-Host "`n[1/3] Publishing Self-Contained Win-x64 build..." -ForegroundColor Magenta
 dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
     -c Release `
     -r win-x64 `
@@ -103,7 +107,7 @@ dotnet publish $streamDeckProj `
     -o $selfContainedSDDir
 
 # 4. Publish Framework-Dependent Win-x64 (Requires .NET 10)
-Write-Host "`n[2/4] Publishing Framework-Dependent Win-x64 build..." -ForegroundColor Magenta
+Write-Host "`n[2/3] Publishing Framework-Dependent Win-x64 build..." -ForegroundColor Magenta
 dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
     -c Release `
     -r win-x64 `
@@ -125,27 +129,8 @@ dotnet publish $streamDeckProj `
     -p:Version=$appVersion `
     -o $frameworkDepSDDir
 
-# 5. Create Portable ZIP Archives (includes optional StreamDeck plugin bundle)
-Write-Host "`n[3/4] Packaging Portable ZIP archives..." -ForegroundColor Magenta
-
-$sdPortableSelfContained = Join-Path $selfContainedDir "StreamDeck\com.appsphinx.smartpowerscheduler.sdPlugin"
-New-Item -ItemType Directory -Path (Split-Path $sdPortableSelfContained -Parent) -Force | Out-Null
-Copy-Item -Path $selfContainedSDDir -Destination $sdPortableSelfContained -Recurse -Force
-
-$portableZip = Join-Path $artifactsDir "$appName-v$appVersion-win-x64-Portable.zip"
-Write-Host "Creating: $(Split-Path $portableZip -Leaf)"
-Compress-Archive -Path "$selfContainedDir\*" -DestinationPath $portableZip -CompressionLevel Optimal
-
-$sdPortableFrameworkDep = Join-Path $frameworkDepDir "StreamDeck\com.appsphinx.smartpowerscheduler.sdPlugin"
-New-Item -ItemType Directory -Path (Split-Path $sdPortableFrameworkDep -Parent) -Force | Out-Null
-Copy-Item -Path $frameworkDepSDDir -Destination $sdPortableFrameworkDep -Recurse -Force
-
-$portableReqDotNetZip = Join-Path $artifactsDir "$appName-v$appVersion-win-x64-Portable-ReqDotNet10.zip"
-Write-Host "Creating: $(Split-Path $portableReqDotNetZip -Leaf)"
-Compress-Archive -Path "$frameworkDepDir\*" -DestinationPath $portableReqDotNetZip -CompressionLevel Optimal
-
-# 6. Build Inno Setup Installers
-Write-Host "`n[4/4] Building Inno Setup Installers..." -ForegroundColor Magenta
+# 5. Build Inno Setup Installers
+Write-Host "`n[3/3] Building Inno Setup Installers..." -ForegroundColor Magenta
 
 $isccPath = ""
 $possibleIsccPaths = @(
@@ -201,12 +186,12 @@ if ($isccPath) {
     Write-Host "WARNING: Inno Setup (ISCC.exe) not found. Skipping installer EXEs." -ForegroundColor Yellow
 }
 
-# 7. Cleanup temp build directory
+# 6. Cleanup temp build directory
 if (Test-Path $tempPublishDir) {
-    Remove-Item -Recurse -Force $tempPublishDir
+    Remove-Item -Recurse -Force $tempPublishDir -ErrorAction SilentlyContinue
 }
 
-# 8. Display Summary
+# 7. Display Summary
 Write-Host "`n==========================================================" -ForegroundColor Cyan
 Write-Host "  Artifacts Generated Successfully in: artifacts\" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan

@@ -47,9 +47,15 @@ You can run `SmartPowerScheduler.exe` directly with flags or bind them to deskto
 
 ## 📥 Download & Installation
 
-Grab the latest release from the [Releases page](https://github.com/chandrath/Smart-Sleep-Scheduler/releases):
-- **Installer (`Setup.exe`)**: Recommended. Bundles the Stream Deck plugin and desktop integration.
-- **Portable (`.zip`)**: Zero installation required, runs standalone.
+Grab the latest release installer from the [Releases page](https://github.com/chandrath/Smart-Sleep-Scheduler/releases):
+- **`SmartPowerScheduler-Setup.exe` (Recommended)**: Complete standalone installer. Includes the full app, bundled Elgato Stream Deck plugin, and desktop shortcuts.
+- **`SmartPowerScheduler-Setup-ReqDotNet10.exe`**: Smaller installer for users who already have the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download) installed.
+
+> [!NOTE]
+> **Windows SmartScreen / "Unknown Publisher" Warning**
+> As an open-source project without expensive commercial code-signing certificates, Windows SmartScreen may show a prompt when running the installer for the first time.
+>
+> To proceed: click **"More info"** → **"Run anyway"**. The entire codebase is 100% open-source and built transparently using GitHub Actions.
 
 ---
 
