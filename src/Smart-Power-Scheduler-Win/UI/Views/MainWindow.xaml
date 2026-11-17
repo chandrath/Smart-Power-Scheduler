@@ -263,7 +263,7 @@
             <Grid x:Name="BlockerDialogOverlay"
                   Background="#CC000000"
                   Visibility="Collapsed">
-                <Border Width="340"
+                <Border Width="360" MaxWidth="380"
                         Background="{DynamicResource SolidCardBackgroundBrush}"
                         BorderBrush="{DynamicResource UrgencyBrush}"
                         BorderThickness="1.5"
@@ -274,10 +274,12 @@
                     <StackPanel>
                         <TextBlock x:Name="BlockerDialogTitle"
                                    Text="⚠️ Timer Paused: Blocker Detected"
-                                   FontSize="15"
+                                   FontSize="14"
                                    FontWeight="Bold"
+                                   TextWrapping="Wrap"
+                                   LineHeight="19"
                                    Foreground="{DynamicResource UrgencyBrush}"
-                                   Margin="0,0,0,6" />
+                                   Margin="0,0,0,8" />
                         <TextBlock x:Name="BlockerDialogMessage"
                                    Text="An active application may prevent normal Windows power action."
                                    FontSize="11.5"
@@ -294,14 +296,15 @@
                         <Button x:Name="DismissBlockerWarningButton"
                                 Content="Ignore &amp; Resume Timer"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Height="34"
+                                Height="36"
                                 Margin="0,0,0,8"
                                 Click="DismissBlockerWarningButton_Click" />
                         <Button x:Name="StopBlockerTimerButton"
                                 Content="Stop Countdown"
                                 Style="{StaticResource FluentButtonStyle}"
-                                Height="32"
-                                Opacity="0.8"
+                                Height="36"
+                                Padding="8,4"
+                                Opacity="0.85"
                                 Click="StopBlockerTimerButton_Click" />
                     </StackPanel>
                 </Border>

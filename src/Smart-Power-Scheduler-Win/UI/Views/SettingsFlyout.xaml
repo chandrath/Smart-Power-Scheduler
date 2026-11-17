@@ -297,10 +297,37 @@
                                      Padding="6,4"
                                      FontSize="11.5"
                                      ToolTip="Enter executable names separated by commas or new lines (e.g. photoshop.exe, blender.exe, word.exe)" />
-                            <TextBlock Text="Enter executable names separated by commas (e.g., photoshop, blender, word)."
+
+                            <!-- Quick App Add Tools -->
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="BrowseCustomExeButton"
+                                        Grid.Column="0"
+                                        Content="📁 Browse .exe..."
+                                        Style="{StaticResource FluentButtonStyle}"
+                                        Height="30"
+                                        FontSize="11"
+                                        Click="BrowseCustomExeButton_Click"
+                                        ToolTip="Browse computer to select an executable file (.exe) to protect" />
+                                <Button x:Name="PickRunningAppButton"
+                                        Grid.Column="2"
+                                        Content="⚡ Pick Running App..."
+                                        Style="{StaticResource FluentButtonStyle}"
+                                        Height="30"
+                                        FontSize="11"
+                                        Click="PickRunningAppButton_Click"
+                                        ToolTip="Select an active desktop application to protect" />
+                            </Grid>
+
+                            <TextBlock Text="Enter executable names separated by commas (e.g., photoshop, blender, word) or use the buttons above."
                                        FontSize="10"
+                                       TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
-                                       Margin="0,4,0,0" />
+                                       Margin="0,6,0,0" />
                         </StackPanel>
                     </Border>
 

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -335,6 +336,84 @@ public partial class SettingsFlyout : UserControl
         catch (Exception ex)
         {
             MessageBox.Show($"Unable to open folder: {ex.Message}", "Settings", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void BrowseCustomExeButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Application (.exe) to Protect",
+                Filter = "Executables (*.exe)|*.exe|All Files (*.*)|*.*",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string cleanName = Path.GetFileNameWithoutExtension(dialog.FileName).ToLowerInvariant();
+                AppendProtectedProcess(cleanName);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to open file picker: {ex.Message}", "Browse App", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void PickRunningAppButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var runningApps = Process.GetProcesses()
+                .Where(p => !string.IsNullOrWhiteSpace(p.MainWindowTitle))
+                .Select(p => p.ProcessName.ToLowerInvariant())
+                .Where(name => !name.Equals("smartpowerscheduler", StringComparison.OrdinalIgnoreCase)
+                            && !name.Equals("explorer", StringComparison.OrdinalIgnoreCase))
+                .Distinct()
+                .OrderBy(name => name)
+                .ToList();
+
+            if (runningApps.Count == 0)
+            {
+                MessageBox.Show("No active desktop applications with visible windows detected.", "Pick Running App", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var menu = new ContextMenu();
+            foreach (var app in runningApps)
+            {
+                var item = new MenuItem { Header = $"⚡ {app}.exe" };
+                string processName = app;
+                item.Click += (_, _) => AppendProtectedProcess(processName);
+                menu.Items.Add(item);
+            }
+
+            menu.PlacementTarget = PickRunningAppButton;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to scan active apps: {ex.Message}", "Pick Running App", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void AppendProtectedProcess(string cleanName)
+    {
+        if (string.IsNullOrWhiteSpace(cleanName)) return;
+        var existing = CustomProtectedAppsInput.Text
+            .Split(new[] { ',', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => Path.GetFileNameWithoutExtension(p.Trim()).ToLowerInvariant())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .ToList();
+
+        if (!existing.Contains(cleanName, StringComparer.OrdinalIgnoreCase))
+        {
+            existing.Add(cleanName);
+            CustomProtectedAppsInput.Text = string.Join(", ", existing);
         }
     }
 
