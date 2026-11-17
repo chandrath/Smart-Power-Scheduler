@@ -17,6 +17,7 @@
 - **Easy to Pause or Cancel**: Plans change? Pause or stop the countdown at any time with a single click. A soft red pulsing glow warns you in the final 30 seconds so nothing happens by surprise.
 - **Built-in Elgato Stream Deck Plugin**: Included right inside the installer—no separate downloads or third-party stores needed. See the live countdown and trigger routines directly with hardware buttons.
 - **1-Click Desktop Shortcuts**: Skip opening the app and adjusting sliders every day. Create custom desktop shortcuts for your daily routines (e.g., *"Sleep in 5m"*) and launch them straight from your desktop, taskbar, or Start Menu.
+- **Custom App Protection (Beta)**: Pick running apps or browse `.exe` files to safeguard your active work (such as Photoshop, Blender, Word, or games). The countdown automatically pauses if your chosen applications are still running to prevent unsaved data loss.
 - **Sleep Blocker Detection**: Warns you if background tools like **DontSleep**, **Caffeine**, or **PowerToys Awake** are secretly preventing Windows from sleeping.
 - **Clean Windows Design**: Modern Fluent interface supporting Windows 11 Mica and Windows 10 Acrylic, with automatic Dark/Light theme switching.
 - **Power History**: Automatically logs your sessions and tracks how many hours your PC spent asleep or powered off before waking up.
