@@ -19,6 +19,7 @@
 - **1-Click Desktop Shortcuts**: Skip opening the app and adjusting sliders every day. Create custom desktop shortcuts for your daily routines (e.g., *"Sleep in 5m"*) and launch them straight from your desktop, taskbar, or Start Menu.
 - **Sleep Blocker Detection**: Warns you if background tools like **DontSleep**, **Caffeine**, or **PowerToys Awake** are secretly preventing Windows from sleeping.
 - **Clean Windows Design**: Modern Fluent interface supporting Windows 11 Mica and Windows 10 Acrylic, with automatic Dark/Light theme switching.
+- **Power History**: Automatically logs your sessions and tracks how many hours your PC spent asleep or powered off before waking up.
 
 ---
 
