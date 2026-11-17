@@ -12,7 +12,7 @@
     "Developer": "Shree",
     "Copyright": "Copyright © 2026 Appsphinx",
     "AppId": "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B",
-    "RepositoryUrl": "https://github.com/chandrath/Smart-Sleep-Scheduler"
+    "RepositoryUrl": "https://github.com/chandrath/Smart-Power-Scheduler"
   },
   "Defaults": {
     "Theme": "Dark",
@@ -54,7 +54,7 @@
     "CustomProtectedAppsIsBeta": true,
     "CustomProtectedProcesses": [],
     "CheckForUpdatesOnStartup": true,
-    "UpdateApiEndpoint": "https://api.github.com/repos/chandrath/Smart-Sleep-Scheduler/releases/latest"
+    "UpdateApiEndpoint": "https://api.github.com/repos/chandrath/Smart-Power-Scheduler/releases/latest"
   },
   "StreamDeck": {
     "PluginUUID": "com.appsphinx.smartpowerscheduler.sdPlugin",

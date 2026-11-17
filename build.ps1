@@ -79,6 +79,18 @@ $streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartp
 $selfContainedSDDir = Join-Path $tempPublishDir "StreamDeckSelfContained"
 $frameworkDepSDDir = Join-Path $tempPublishDir "StreamDeckFrameworkDep"
 
+# Synchronize Stream Deck manifest.json with SSOT
+$manifestFile = Join-Path $streamDeckPluginSrc "manifest.json"
+if (Test-Path $manifestFile) {
+    $manifestObj = Get-Content -Raw $manifestFile | ConvertFrom-Json
+    $manifestObj.Version = $appVersion
+    $manifestObj.URL = $appUrl
+    $manifestObj.Name = $appDisplayName
+    $manifestObj.Description = $cfg.App.Description
+    $manifestObj | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestFile -Encoding UTF8
+    Write-Host "-> Synchronized Stream Deck manifest.json with SSOT (v$appVersion)" -ForegroundColor Green
+}
+
 # Copy base plugin templates to staging directories
 Copy-Item -Path $streamDeckPluginSrc -Destination $selfContainedSDDir -Recurse -Force
 Copy-Item -Path $streamDeckPluginSrc -Destination $frameworkDepSDDir -Recurse -Force
@@ -133,58 +145,92 @@ dotnet publish $streamDeckProj `
 Write-Host "`n[3/3] Building Inno Setup Installers..." -ForegroundColor Magenta
 
 $isccPath = ""
-$possibleIsccPaths = @(
-    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    "C:\Program Files\Inno Setup 6\ISCC.exe",
-    (Get-Command iscc.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue)
-)
 
-foreach ($p in $possibleIsccPaths) {
-    if ($p -and (Test-Path $p)) {
-        $isccPath = $p
-        break
+# 1. Check PATH
+$cmd = Get-Command iscc.exe -ErrorAction SilentlyContinue
+if ($cmd) {
+    $isccPath = $cmd.Source
+}
+
+# 2. Check Windows Registry (App Paths & Uninstall keys for 32-bit and 64-bit)
+if (-not $isccPath) {
+    $regKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ISCC.exe",
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ISCC.exe",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1"
+    )
+    foreach ($rk in $regKeys) {
+        if (Test-Path $rk) {
+            $regItem = Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue
+            if ($regItem -and $regItem.'(default)' -and (Test-Path $regItem.'(default)')) {
+                $isccPath = $regItem.'(default)'
+                break
+            }
+            if ($regItem -and $regItem.InstallLocation) {
+                $candidate = Join-Path $regItem.InstallLocation "ISCC.exe"
+                if (Test-Path $candidate) {
+                    $isccPath = $candidate
+                    break
+                }
+            }
+        }
     }
 }
 
-$issPath = Join-Path $srcDir "Packaging\installer.iss"
-
-if ($isccPath) {
-    Write-Host "Found Inno Setup Compiler: $isccPath" -ForegroundColor Green
-
-    # Installer 1: Self-contained installer
-    $setupBaseName = "$appName-v$appVersion-win-x64-Setup"
-    Write-Host "Compiling: $setupBaseName.exe"
-    & $isccPath `
-        "/DMyAppName=$appDisplayName" `
-        "/DMyAppExeName=$appName.exe" `
-        "/DMyAppVersion=$appVersion" `
-        "/DMyPublisher=$appVendor" `
-        "/DMyAppURL=$appUrl" `
-        "/DMyAppId=$appId" `
-        "/DSourceDir=$selfContainedDir" `
-        "/DStreamDeckPluginDir=$selfContainedSDDir" `
-        "/DOutputDir=$artifactsDir" `
-        "/DOutputBaseFilename=$setupBaseName" `
-        $issPath | Out-Null
-
-    # Installer 2: Framework-dependent installer
-    $setupReqDotNetBaseName = "$appName-v$appVersion-win-x64-Setup-ReqDotNet10"
-    Write-Host "Compiling: $setupReqDotNetBaseName.exe"
-    & $isccPath `
-        "/DMyAppName=$appDisplayName" `
-        "/DMyAppExeName=$appName.exe" `
-        "/DMyAppVersion=$appVersion" `
-        "/DMyPublisher=$appVendor" `
-        "/DMyAppURL=$appUrl" `
-        "/DMyAppId=$appId" `
-        "/DSourceDir=$frameworkDepDir" `
-        "/DStreamDeckPluginDir=$frameworkDepSDDir" `
-        "/DOutputDir=$artifactsDir" `
-        "/DOutputBaseFilename=$setupReqDotNetBaseName" `
-        $issPath | Out-Null
-} else {
-    Write-Host "WARNING: Inno Setup (ISCC.exe) not found. Skipping installer EXEs." -ForegroundColor Yellow
+# 3. Fallback to standard environment directories
+if (-not $isccPath) {
+    $envCandidates = @(
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles} "Inno Setup 6\ISCC.exe"),
+        (Join-Path ${env:LOCALAPPDATA} "Programs\Inno Setup 6\ISCC.exe")
+    )
+    foreach ($cand in $envCandidates) {
+        if ($cand -and (Test-Path $cand)) {
+            $isccPath = $cand
+            break
+        }
+    }
 }
+
+if (-not $isccPath) {
+    throw "Inno Setup Compiler (ISCC.exe) was not found on this system. Please install Inno Setup 6 or add ISCC.exe to PATH."
+}
+
+$issPath = Join-Path $srcDir "Packaging\installer.iss"
+Write-Host "Found Inno Setup Compiler: $isccPath" -ForegroundColor Green
+
+# Installer 1: Self-contained installer
+$setupBaseName = "$appName-v$appVersion-win-x64-Setup"
+Write-Host "Compiling: $setupBaseName.exe"
+& $isccPath `
+    "/DMyAppName=$appDisplayName" `
+    "/DMyAppExeName=$appName.exe" `
+    "/DMyAppVersion=$appVersion" `
+    "/DMyPublisher=$appVendor" `
+    "/DMyAppURL=$appUrl" `
+    "/DMyAppId=$appId" `
+    "/DSourceDir=$selfContainedDir" `
+    "/DStreamDeckPluginDir=$selfContainedSDDir" `
+    "/DOutputDir=$artifactsDir" `
+    "/DOutputBaseFilename=$setupBaseName" `
+    $issPath | Out-Null
+
+# Installer 2: Framework-dependent installer
+$setupReqDotNetBaseName = "$appName-v$appVersion-win-x64-Setup-ReqDotNet10"
+Write-Host "Compiling: $setupReqDotNetBaseName.exe"
+& $isccPath `
+    "/DMyAppName=$appDisplayName" `
+    "/DMyAppExeName=$appName.exe" `
+    "/DMyAppVersion=$appVersion" `
+    "/DMyPublisher=$appVendor" `
+    "/DMyAppURL=$appUrl" `
+    "/DMyAppId=$appId" `
+    "/DSourceDir=$frameworkDepDir" `
+    "/DStreamDeckPluginDir=$frameworkDepSDDir" `
+    "/DOutputDir=$artifactsDir" `
+    "/DOutputBaseFilename=$setupReqDotNetBaseName" `
+    $issPath | Out-Null
 
 # 6. Cleanup temp build directory
 if (Test-Path $tempPublishDir) {

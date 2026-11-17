@@ -62,12 +62,13 @@ public sealed class AppMetadata
     public string Name { get; set; } = "SmartPowerScheduler";
     public string DisplayName { get; set; } = "Smart Power Scheduler";
     public string Description { get; set; } = "A clean, modern Windows smart power timer and scheduler with Fluent translucent design.";
-    public string Version { get; set; } = "0.9.0.3";
+    // Fallback if DevConfig.json is unreadable; runtime loads from DevConfig.json (SSOT)
+    public string Version { get; set; } = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0.0";
     public string Vendor { get; set; } = "Appsphinx";
     public string Developer { get; set; } = "Shree";
     public string Copyright { get; set; } = "Copyright © 2026 Appsphinx";
     public string AppId { get; set; } = "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B";
-    public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Sleep-Scheduler";
+    public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Power-Scheduler";
 }
 
 public sealed class AppDefaults
@@ -101,7 +102,7 @@ public sealed class AppDefaults
     public bool CustomProtectedAppsIsBeta { get; set; } = true;
     public string[] CustomProtectedProcesses { get; set; } = [];
     public bool CheckForUpdatesOnStartup { get; set; } = true;
-    public string UpdateApiEndpoint { get; set; } = "https://api.github.com/repos/chandrath/Smart-Sleep-Scheduler/releases/latest";
+    public string UpdateApiEndpoint { get; set; } = "https://api.github.com/repos/chandrath/Smart-Power-Scheduler/releases/latest";
 }
 
 public sealed class StreamDeckConfig

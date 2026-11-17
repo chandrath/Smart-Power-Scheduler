@@ -49,7 +49,7 @@ You can run `SmartPowerScheduler.exe` directly with flags or bind them to deskto
 
 ## 📥 Download & Installation
 
-Grab the latest release installer from the [Releases page](https://github.com/chandrath/Smart-Sleep-Scheduler/releases):
+Grab the latest release installer from the [Releases page](https://github.com/chandrath/Smart-Power-Scheduler/releases):
 - **`SmartPowerScheduler-Setup.exe` (Recommended)**: Complete standalone installer. Includes the full app, bundled Elgato Stream Deck plugin, and desktop shortcuts.
 - **`SmartPowerScheduler-Setup-ReqDotNet10.exe`**: Smaller installer for users who already have the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download) installed.
 

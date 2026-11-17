@@ -1,44 +1,44 @@
-{
-  "Author": "Appsphinx",
-  "Description": "Smart Power Scheduler integration for Elgato Stream Deck with live countdown display and power action triggers.",
-  "Name": "Smart Power Scheduler",
-  "Icon": "images/pluginIcon",
-  "Category": "Smart Power Scheduler",
-  "CategoryIcon": "images/pluginIcon",
-  "URL": "https://github.com/chandrath/Smart-Sleep-Scheduler",
-  "Version": "0.9.0.3",
-  "SDKVersion": 2,
-  "Software": {
-    "MinimumVersion": "4.3"
-  },
-  "OS": [
-    {
-      "Platform": "windows",
-      "MinimumVersion": "10"
-    }
-  ],
-  "CodePathWin": "SmartPowerScheduler.StreamDeck.exe",
-  "Actions": [
-    {
-      "Name": "Smart Power Timer",
-      "UUID": "com.appsphinx.smartpowerscheduler.action.timer",
-      "Icon": "images/actionIcon",
-      "Tooltip": "Trigger power action or view active countdown with Smart Power Scheduler",
-      "PropertyInspectorPath": "property_inspector/inspector.html",
-      "Controllers": [
-        "Keypad"
-      ],
-      "SupportedInMultiActions": false,
-      "UserTitleEnabled": false,
-      "States": [
-        {
-          "Image": "images/actionIcon",
-          "TitleAlignment": "middle",
-          "FontSize": 12,
-          "FontStyle": "Bold",
-          "TitleColor": "#FFFFFF"
-        }
-      ]
-    }
-  ]
+﻿{
+    "Author":  "Appsphinx",
+    "Description":  "A clean, modern Windows smart power timer and scheduler with Fluent translucent design.",
+    "Name":  "Smart Power Scheduler",
+    "Icon":  "images/pluginIcon",
+    "Category":  "Smart Power Scheduler",
+    "CategoryIcon":  "images/pluginIcon",
+    "URL":  "https://github.com/chandrath/Smart-Power-Scheduler",
+    "Version":  "0.9.0.3",
+    "SDKVersion":  2,
+    "Software":  {
+                     "MinimumVersion":  "4.3"
+                 },
+    "OS":  [
+               {
+                   "Platform":  "windows",
+                   "MinimumVersion":  "10"
+               }
+           ],
+    "CodePathWin":  "SmartPowerScheduler.StreamDeck.exe",
+    "Actions":  [
+                    {
+                        "Name":  "Smart Power Timer",
+                        "UUID":  "com.appsphinx.smartpowerscheduler.action.timer",
+                        "Icon":  "images/actionIcon",
+                        "Tooltip":  "Trigger power action or view active countdown with Smart Power Scheduler",
+                        "PropertyInspectorPath":  "property_inspector/inspector.html",
+                        "Controllers":  [
+                                            "Keypad"
+                                        ],
+                        "SupportedInMultiActions":  false,
+                        "UserTitleEnabled":  false,
+                        "States":  [
+                                       {
+                                           "Image":  "images/actionIcon",
+                                           "TitleAlignment":  "middle",
+                                           "FontSize":  12,
+                                           "FontStyle":  "Bold",
+                                           "TitleColor":  "#FFFFFF"
+                                       }
+                                   ]
+                    }
+                ]
 }

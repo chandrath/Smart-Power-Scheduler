@@ -8,13 +8,14 @@
   #define MyAppExeName "SmartPowerScheduler.exe"
 #endif
 #ifndef MyAppVersion
-  #define MyAppVersion "0.9.0.2"
+  ; Fallback if compiled outside build.ps1; build.ps1 passes /DMyAppVersion from DevConfig.json (SSOT)
+  #define MyAppVersion "0.0.0.0"
 #endif
 #ifndef MyPublisher
   #define MyPublisher "Appsphinx"
 #endif
 #ifndef MyAppURL
-  #define MyAppURL "https://github.com/chandrath/Smart-Sleep-Scheduler"
+  #define MyAppURL "https://github.com/chandrath/Smart-Power-Scheduler"
 #endif
 #ifndef MyAppId
   #define MyAppId "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B"
