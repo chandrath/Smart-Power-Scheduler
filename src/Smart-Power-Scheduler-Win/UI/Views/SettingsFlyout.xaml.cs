@@ -81,11 +81,6 @@ public partial class SettingsFlyout : UserControl
         }
         UpdateStreamDeckStatus();
 
-        // Defaults duration
-        DecomposeSeconds(s.DefaultTimerDurationSeconds, out int defVal, out int defUnitIdx);
-        DefaultDurationInput.Text = defVal.ToString();
-        DefaultDurationUnitCombo.SelectedIndex = defUnitIdx;
-
         // Auto start
         AutoStartCheck.IsChecked = s.AutoStartOnLaunch;
         DecomposeSeconds(s.AutoStartDurationSeconds, out int autoVal, out int autoUnitIdx);
@@ -251,19 +246,14 @@ public partial class SettingsFlyout : UserControl
         var s = App.Settings;
         var limits = AppConfig.Instance.Defaults;
 
-        // Parse Default Duration
-        if (int.TryParse(DefaultDurationInput.Text, out int defVal) && defVal > 0)
-        {
-            int total = ComposeSeconds(defVal, DefaultDurationUnitCombo.SelectedIndex);
-            s.DefaultTimerDurationSeconds = Math.Clamp(total, limits.MinTimerSeconds, limits.MaxTimerSeconds);
-        }
-
-        // Parse Auto Start Duration
+        // Parse Auto Start & Unified Timer Duration
         s.AutoStartOnLaunch = AutoStartCheck.IsChecked ?? true;
         if (int.TryParse(AutoStartDurationInput.Text, out int autoVal) && autoVal > 0)
         {
             int total = ComposeSeconds(autoVal, AutoStartDurationUnitCombo.SelectedIndex);
-            s.AutoStartDurationSeconds = Math.Clamp(total, limits.MinTimerSeconds, limits.MaxTimerSeconds);
+            int clamped = Math.Clamp(total, limits.MinTimerSeconds, limits.MaxTimerSeconds);
+            s.AutoStartDurationSeconds = clamped;
+            s.DefaultTimerDurationSeconds = clamped;
         }
 
         s.AlwaysOnTop = AlwaysOnTopCheck.IsChecked ?? true;
@@ -297,9 +287,9 @@ public partial class SettingsFlyout : UserControl
         s.SoundVolume = defaults.SoundVolume > 0 ? defaults.SoundVolume : 50;
         s.SoundScheme = !string.IsNullOrWhiteSpace(defaults.SoundScheme) ? defaults.SoundScheme : "Modern";
         s.TickTriggerSeconds = defaults.TickTriggerSeconds;
-        s.DefaultTimerDurationSeconds = defaults.DefaultTimerDurationSeconds;
         s.AutoStartOnLaunch = defaults.AutoStartOnLaunch;
         s.AutoStartDurationSeconds = defaults.AutoStartDurationSeconds;
+        s.DefaultTimerDurationSeconds = defaults.AutoStartDurationSeconds;
         s.SelectedPowerAction = Enum.TryParse<PowerAction>(defaults.DefaultPowerAction, true, out var a) ? a : PowerAction.Sleep;
         s.AllowForceActions = defaults.AllowForceActions;
         s.WakeUpTitle = defaults.WakeUpTitle;

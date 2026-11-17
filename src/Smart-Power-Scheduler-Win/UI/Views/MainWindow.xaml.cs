@@ -27,7 +27,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         _launchOverrides = overrides;
 
-        _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+        int initialSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
+        _readyDuration = TimeSpan.FromSeconds(initialSeconds);
 
         _timerService.Tick += OnTimerTick;
         _timerService.Completed += OnTimerCompleted;
@@ -74,7 +75,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+            int initialSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
+            _readyDuration = TimeSpan.FromSeconds(initialSeconds);
             OnTimerStateChanged(TimerState.Stopped);
         }
     }
@@ -273,7 +275,8 @@ public partial class MainWindow : Window
         UpdatePinVisual();
         if (_timerService.State == TimerState.Stopped)
         {
-            _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+            int initialSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
+            _readyDuration = TimeSpan.FromSeconds(initialSeconds);
             RefreshReadyDisplay();
         }
         else
@@ -447,7 +450,8 @@ public partial class MainWindow : Window
     {
         if (_timerService.State != TimerState.Stopped) return;
         CountdownControl.CancelInlineEdit();
-        _readyDuration = TimeSpan.FromSeconds(App.Settings.DefaultTimerDurationSeconds);
+        int initialSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
+        _readyDuration = TimeSpan.FromSeconds(initialSeconds);
         AdjustDuration(TimeSpan.Zero);
     }
 
