@@ -36,6 +36,7 @@ public sealed class UserSettings
     public bool BlockerAlertSoundEnabled { get; set; }
     public bool StartupBlockerAlertSoundEnabled { get; set; }
     public bool CheckForUpdatesOnStartup { get; set; }
+    public string[] CustomProtectedProcesses { get; set; } = [];
 
     public UserSettings()
     {
@@ -58,6 +59,17 @@ public sealed class UserSettings
         BlockerAlertSoundEnabled = defaults.BlockerAlertSoundEnabled;
         StartupBlockerAlertSoundEnabled = defaults.StartupBlockerAlertSoundEnabled;
         CheckForUpdatesOnStartup = defaults.CheckForUpdatesOnStartup;
+        CustomProtectedProcesses = SanitizeProcesses(defaults.CustomProtectedProcesses);
+    }
+
+    public static string[] SanitizeProcesses(IEnumerable<string>? processes)
+    {
+        if (processes == null) return [];
+        return processes
+            .Select(p => Path.GetFileNameWithoutExtension(p?.Trim() ?? "").ToLowerInvariant())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .ToArray();
     }
 
     public static string GetSettingsDirectory() => SettingsDirectory;
@@ -94,6 +106,7 @@ public sealed class UserSettings
                         settings.PeriodicBlockerScanEnabled = true;
                         needSave = true;
                     }
+                    settings.CustomProtectedProcesses = SanitizeProcesses(settings.CustomProtectedProcesses);
                     if (needSave)
                     {
                         settings.Save();

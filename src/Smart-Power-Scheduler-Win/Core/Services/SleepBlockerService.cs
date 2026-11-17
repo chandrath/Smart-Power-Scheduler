@@ -7,8 +7,24 @@ using System.Security.Principal;
 using System.Windows;
 using SmartPowerScheduler.Config;
 
+public readonly record struct BlockerScanResult(
+    bool HasInhibitor,
+    string? DisplayName,
+    bool IsCustomApp = false,
+    int CustomCount = 0,
+    string[]? RunningCustomApps = null
+)
+{
+    public void Deconstruct(out bool hasInhibitor, out string? displayName)
+    {
+        hasInhibitor = HasInhibitor;
+        displayName = DisplayName;
+    }
+}
+
 /// <summary>
-/// Ultra-lightweight service to inspect active sleep blockers (e.g. Caffeine, Don't Sleep, Awake).
+/// Ultra-lightweight service to inspect active sleep blockers (e.g. Caffeine, Don't Sleep, Awake)
+/// and user-defined custom protected applications.
 /// Uses zero-allocation Win32 kernel snapshots and elevation detection.
 /// </summary>
 public static class SleepBlockerService
@@ -57,14 +73,46 @@ public static class SleepBlockerService
         }
     }
 
-    public static (bool HasBlocker, string? BlockerName) DetectActiveBlocker()
+    public static string TruncateName(string name, int maxLen = 28)
+    {
+        if (string.IsNullOrEmpty(name)) return "";
+        if (name.Length <= maxLen) return name;
+        return name[..(maxLen - 3)] + "...";
+    }
+
+    public static string FormatCustomAppsSummary(string[] runningApps)
+    {
+        if (runningApps == null || runningApps.Length == 0) return "";
+        if (runningApps.Length == 1)
+        {
+            return $"'{TruncateName(runningApps[0])}'";
+        }
+        if (runningApps.Length <= 3)
+        {
+            var truncated = runningApps.Select(a => $"'{TruncateName(a)}'").ToArray();
+            if (truncated.Length == 2) return $"{truncated[0]} and {truncated[1]}";
+            return $"{truncated[0]}, {truncated[1]} and {truncated[2]}";
+        }
+        return $"{runningApps.Length} custom protected apps";
+    }
+
+    public static BlockerScanResult DetectActiveBlocker()
     {
         var knownBlockers = AppConfig.Instance.Defaults.KnownSleepBlockerProcesses;
-        var (foundProcess, processName) = ScanKernelProcesses(knownBlockers);
+        var customProcesses = App.Settings?.CustomProtectedProcesses ?? [];
 
-        if (foundProcess)
+        var scan = ScanKernelProcesses(knownBlockers, customProcesses);
+
+        // Prioritize user's custom protected applications (active work protection)
+        if (scan.RunningCustomApps.Length > 0)
         {
-            return (true, processName);
+            string summary = FormatCustomAppsSummary(scan.RunningCustomApps);
+            return new BlockerScanResult(true, summary, true, scan.RunningCustomApps.Length, scan.RunningCustomApps);
+        }
+
+        if (scan.FoundBlocker)
+        {
+            return new BlockerScanResult(true, scan.BlockerName, false, 0, []);
         }
 
         // If running as Administrator, perform deep kernel power request inspection
@@ -73,20 +121,24 @@ public static class SleepBlockerService
             var (hasKernelLock, reason) = InspectKernelPowerRequests();
             if (hasKernelLock)
             {
-                return (true, reason);
+                return new BlockerScanResult(true, reason, false, 0, []);
             }
         }
 
-        return (false, null);
+        return new BlockerScanResult(false, null, false, 0, []);
     }
 
-    private static (bool Found, string? Name) ScanKernelProcesses(string[] knownBlockers)
+    private static (bool FoundBlocker, string? BlockerName, string[] RunningCustomApps) ScanKernelProcesses(string[] knownBlockers, string[] customProcesses)
     {
         IntPtr hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (hSnapshot == IntPtr.Zero || hSnapshot == (IntPtr)(-1))
         {
-            return (false, null);
+            return (false, null, []);
         }
+
+        var customSet = new HashSet<string>(customProcesses, StringComparer.OrdinalIgnoreCase);
+        var detectedCustom = new List<string>();
+        string? foundBlockerName = null;
 
         try
         {
@@ -95,12 +147,26 @@ public static class SleepBlockerService
             {
                 do
                 {
-                    string exeName = Path.GetFileNameWithoutExtension(entry.szExeFile).ToLowerInvariant();
-                    foreach (var target in knownBlockers)
+                    string rawName = Path.GetFileNameWithoutExtension(entry.szExeFile);
+                    string exeName = rawName.ToLowerInvariant();
+
+                    if (customSet.Contains(exeName))
                     {
-                        if (exeName.Contains(target.ToLowerInvariant()))
+                        if (!detectedCustom.Contains(rawName, StringComparer.OrdinalIgnoreCase))
                         {
-                            return (true, Path.GetFileNameWithoutExtension(entry.szExeFile));
+                            detectedCustom.Add(rawName);
+                        }
+                    }
+
+                    if (foundBlockerName == null)
+                    {
+                        foreach (var target in knownBlockers)
+                        {
+                            if (exeName.Contains(target.ToLowerInvariant()))
+                            {
+                                foundBlockerName = rawName;
+                                break;
+                            }
                         }
                     }
                 } while (Process32Next(hSnapshot, ref entry));
@@ -115,7 +181,7 @@ public static class SleepBlockerService
             CloseHandle(hSnapshot);
         }
 
-        return (false, null);
+        return (foundBlockerName != null, foundBlockerName, detectedCustom.ToArray());
     }
 
     private static (bool HasLock, string? Reason) InspectKernelPowerRequests()

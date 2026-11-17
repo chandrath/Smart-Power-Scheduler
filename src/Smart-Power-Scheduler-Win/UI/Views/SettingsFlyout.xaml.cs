@@ -114,6 +114,12 @@ public partial class SettingsFlyout : UserControl
         WakeUpTitleInput.Text = s.WakeUpTitle;
         WakeUpMessageInput.Text = s.WakeUpMessage;
 
+        // Custom Protected Apps (Beta)
+        CustomAppsBetaBadge.Visibility = cfg.Defaults.CustomProtectedAppsIsBeta ? Visibility.Visible : Visibility.Collapsed;
+        CustomProtectedAppsInput.Text = s.CustomProtectedProcesses != null && s.CustomProtectedProcesses.Length > 0
+            ? string.Join(", ", s.CustomProtectedProcesses)
+            : "";
+
         // Blocker Defense
         StartupBlockerSoundCheck.IsChecked = s.StartupBlockerAlertSoundEnabled;
         BlockerAlertSoundCheck.IsChecked = s.BlockerAlertSoundEnabled;
@@ -271,6 +277,11 @@ public partial class SettingsFlyout : UserControl
         s.PeriodicBlockerScanIntervalSeconds = PeriodicScanIntervalCombo.SelectedIndex switch { 0 => 5, 1 => 10, 2 => 15, 3 => 20, 4 => 30, 5 => 60, _ => 5 };
         s.CheckForUpdatesOnStartup = CheckUpdatesOnLaunchCheck.IsChecked ?? true;
 
+        // Custom Protected Apps (Beta)
+        var rawCustom = CustomProtectedAppsInput.Text
+            .Split(new[] { ',', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        s.CustomProtectedProcesses = UserSettings.SanitizeProcesses(rawCustom);
+
         s.Save();
         SettingsChanged?.Invoke();
         Closed?.Invoke();
@@ -299,6 +310,7 @@ public partial class SettingsFlyout : UserControl
         s.PeriodicBlockerScanEnabled = defaults.PeriodicBlockerScanEnabled;
         s.PeriodicBlockerScanIntervalSeconds = defaults.PeriodicBlockerScanIntervalSeconds;
         s.CheckForUpdatesOnStartup = defaults.CheckForUpdatesOnStartup;
+        s.CustomProtectedProcesses = UserSettings.SanitizeProcesses(defaults.CustomProtectedProcesses);
 
         s.Save();
         LoadValues();

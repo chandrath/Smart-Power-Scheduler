@@ -18,6 +18,8 @@ public partial class MainWindow : Window
     private TimeSpan _readyDuration;
     private bool _blockerWarningDismissed;
     private string? _currentBlockerName;
+    private bool _currentIsCustomApp;
+    private string[] _currentRunningCustomApps = [];
     private int _lastMilestoneChecked = -1;
     private int _lastBroadcastSecs = -1;
     private readonly LaunchOverrides? _launchOverrides;
@@ -370,39 +372,58 @@ public partial class MainWindow : Window
 
     private void CheckForSleepBlockers(bool isStartup = false)
     {
-        var action = App.Settings.SelectedPowerAction;
-        if (action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart) return;
-
         Task.Run(() =>
         {
-            var (hasBlocker, blockerName) = SleepBlockerService.DetectActiveBlocker();
-            Dispatcher.Invoke(() =>
+            var result = SleepBlockerService.DetectActiveBlocker();
+            if (!result.HasInhibitor)
             {
-                if (hasBlocker)
-                {
-                    _currentBlockerName = blockerName;
-                    BlockerWarningText.Text = $"Blocker: {blockerName}";
-                    BlockerWarningPill.Visibility = Visibility.Visible;
-
-                    if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
-                    {
-                        _timerService.Pause();
-                        if (App.Settings.BlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
-                        ShowBlockerDialog("⚠️ Timer Paused: Blocker Detected");
-                    }
-                    else if (_timerService.State == TimerState.Stopped && !_blockerWarningDismissed)
-                    {
-                        if (isStartup && App.Settings.StartupBlockerAlertSoundEnabled)
-                            SoundService.PlayBlockerAlert();
-                        ShowBlockerDialog("⚠️ Blocker Detected: Action Required");
-                    }
-                }
-                else
+                Dispatcher.Invoke(() =>
                 {
                     _currentBlockerName = null;
+                    _currentIsCustomApp = false;
+                    _currentRunningCustomApps = [];
                     _blockerWarningDismissed = false;
                     BlockerWarningPill.Visibility = Visibility.Collapsed;
                     BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+                });
+                return;
+            }
+
+            var action = App.Settings.SelectedPowerAction;
+            bool isForce = action == PowerAction.ForceShutdown || action == PowerAction.ForceRestart;
+            if (isForce && !result.IsCustomApp)
+            {
+                // Force actions intentionally bypass system sleep blockers
+                return;
+            }
+
+            Dispatcher.Invoke(() =>
+            {
+                _currentBlockerName = result.DisplayName;
+                _currentIsCustomApp = result.IsCustomApp;
+                _currentRunningCustomApps = result.RunningCustomApps ?? [];
+
+                string betaSuffix = AppConfig.Instance.Defaults.CustomProtectedAppsIsBeta ? " (Beta)" : "";
+                BlockerWarningText.Text = _currentIsCustomApp
+                    ? $"Protected App Active{betaSuffix}: {_currentBlockerName}"
+                    : $"Blocker: {_currentBlockerName}";
+                BlockerWarningPill.Visibility = Visibility.Visible;
+
+                if (_timerService.State == TimerState.Running && !_blockerWarningDismissed)
+                {
+                    _timerService.Pause();
+                    if (App.Settings.BlockerAlertSoundEnabled) SoundService.PlayBlockerAlert();
+                    ShowBlockerDialog(_currentIsCustomApp
+                        ? $"⚠️ Timer Paused: Custom Protected App Active{betaSuffix}"
+                        : "⚠️ Timer Paused: Blocker Detected");
+                }
+                else if (_timerService.State == TimerState.Stopped && !_blockerWarningDismissed)
+                {
+                    if (isStartup && App.Settings.StartupBlockerAlertSoundEnabled)
+                        SoundService.PlayBlockerAlert();
+                    ShowBlockerDialog(_currentIsCustomApp
+                        ? $"⚠️ Custom Protected App Active{betaSuffix}"
+                        : "⚠️ Blocker Detected: Action Required");
                 }
             });
         });
@@ -411,20 +432,69 @@ public partial class MainWindow : Window
     private void ShowBlockerDialog(string title)
     {
         string actName = PowerService.GetActionDisplayName(App.Settings.SelectedPowerAction);
-        string blocker = _currentBlockerName ?? "Blocker";
+        string inhibitor = _currentBlockerName ?? "Protected App";
         BlockerDialogTitle.Text = title;
-        BlockerDialogMessage.Text = $"Application '{blocker}' is actively preventing scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
-        CloseBlockerAndResumeButton.Content = $"🛑 Close {blocker} & {(_timerService.State == TimerState.Stopped ? "Start" : "Resume")}";
+
+        if (_currentIsCustomApp)
+        {
+            BlockerDialogMessage.Text = $"{inhibitor} is currently running. Scheduled {actName} is paused to protect your active work.\n\n(To disable this, remove it from Settings > Custom Protected Apps)";
+            CloseBlockerAndResumeButton.Content = $"⚠️ Force Close {inhibitor} & {(_timerService.State == TimerState.Stopped ? "Start" : "Resume")}";
+            DismissBlockerWarningButton.Content = "Ignore & Resume Countdown";
+            StopBlockerTimerButton.Content = "Stop Countdown & Keep Working";
+        }
+        else
+        {
+            BlockerDialogMessage.Text = $"Application '{inhibitor}' is actively preventing scheduled {actName}.\n\nNormal {actName} will be vetoed by Windows. Choose an action below:";
+            CloseBlockerAndResumeButton.Content = $"🛑 Close {inhibitor} & {(_timerService.State == TimerState.Stopped ? "Start" : "Resume")}";
+            DismissBlockerWarningButton.Content = "Ignore & Resume Timer";
+            StopBlockerTimerButton.Content = "Stop Countdown";
+        }
+
         BlockerDialogOverlay.Visibility = Visibility.Visible;
     }
 
-    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e) =>
-        ShowBlockerDialog(_timerService.State == TimerState.Paused ? "⚠️ Timer Paused: Blocker Detected" : "⚠️ Blocker Active");
+    private void BlockerWarningPill_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        string betaSuffix = AppConfig.Instance.Defaults.CustomProtectedAppsIsBeta ? " (Beta)" : "";
+        string title = _currentIsCustomApp
+            ? (_timerService.State == TimerState.Paused ? $"⚠️ Timer Paused: Custom Protected App Active{betaSuffix}" : $"⚠️ Custom Protected App Active{betaSuffix}")
+            : (_timerService.State == TimerState.Paused ? "⚠️ Timer Paused: Blocker Detected" : "⚠️ Blocker Active");
+        ShowBlockerDialog(title);
+    }
 
     private void CloseBlockerAndResumeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(_currentBlockerName)) SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
+        if (_currentIsCustomApp)
+        {
+            var mbr = MessageBox.Show(
+                $"Force closing {_currentBlockerName} may cause unsaved documents or progress to be permanently lost.\n\nDo you want to proceed and terminate the application?",
+                "Confirm Force Close",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (mbr != MessageBoxResult.Yes) return;
+
+            if (_currentRunningCustomApps.Length > 0)
+            {
+                foreach (var app in _currentRunningCustomApps)
+                {
+                    SleepBlockerService.TryCloseBlockerProcess(app);
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(_currentBlockerName))
+            {
+                SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
+            }
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(_currentBlockerName))
+                SleepBlockerService.TryCloseBlockerProcess(_currentBlockerName);
+        }
+
         _currentBlockerName = null;
+        _currentIsCustomApp = false;
+        _currentRunningCustomApps = [];
         _blockerWarningDismissed = false;
         BlockerDialogOverlay.Visibility = BlockerWarningPill.Visibility = Visibility.Collapsed;
         ResumeOrStartTimer();
@@ -444,7 +514,12 @@ public partial class MainWindow : Window
         else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
 
-    private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e) { BlockerDialogOverlay.Visibility = Visibility.Collapsed; _timerService.Stop(); }
+    private void StopBlockerTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        BlockerDialogOverlay.Visibility = Visibility.Collapsed;
+        _blockerWarningDismissed = false;
+        _timerService.Stop();
+    }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e)
     {

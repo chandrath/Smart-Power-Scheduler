@@ -51,6 +51,8 @@
       "stayawake",
       "amphetamine"
     ],
+    "CustomProtectedAppsIsBeta": true,
+    "CustomProtectedProcesses": [],
     "CheckForUpdatesOnStartup": true,
     "UpdateApiEndpoint": "https://api.github.com/repos/chandrath/Smart-Sleep-Scheduler/releases/latest"
   },

@@ -98,6 +98,8 @@ public sealed class AppDefaults
     [
         "caffeine", "dontsleep", "powertoys.awake", "mousejiggler", "nosleep", "stayawake", "amphetamine"
     ];
+    public bool CustomProtectedAppsIsBeta { get; set; } = true;
+    public string[] CustomProtectedProcesses { get; set; } = [];
     public bool CheckForUpdatesOnStartup { get; set; } = true;
     public string UpdateApiEndpoint { get; set; } = "https://api.github.com/repos/chandrath/Smart-Sleep-Scheduler/releases/latest";
 }
