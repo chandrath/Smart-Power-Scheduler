@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -74,6 +75,7 @@ public partial class MainWindow : Window
             int launchSeconds = App.Settings.AutoStartDurationSeconds > 0 ? App.Settings.AutoStartDurationSeconds : 60;
             _readyDuration = TimeSpan.FromSeconds(launchSeconds);
             _timerService.Start(_readyDuration);
+            BringToFrontAndRestore();
         }
         else
         {
@@ -366,6 +368,7 @@ public partial class MainWindow : Window
         CountdownControl.CommitIfEditing();
         _lastMilestoneChecked = -1;
         _blockerWarningDismissed = false;
+        BringToFrontAndRestore();
         _timerService.Start(_readyDuration);
         CheckForSleepBlockers();
     }
@@ -510,6 +513,7 @@ public partial class MainWindow : Window
 
     private void ResumeOrStartTimer()
     {
+        BringToFrontAndRestore();
         if (_timerService.State == TimerState.Paused) _timerService.Resume();
         else if (_timerService.State == TimerState.Stopped) _timerService.Start(_readyDuration);
     }
@@ -550,12 +554,54 @@ public partial class MainWindow : Window
         else if (e.Key == Key.F11) { ToggleFullscreen(); e.Handled = true; }
     }
 
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
+
+    private const int SW_RESTORE = 9;
+
+    public void BringToFrontAndRestore()
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        var helper = new System.Windows.Interop.WindowInteropHelper(this);
+        IntPtr hWnd = helper.Handle;
+        if (hWnd != IntPtr.Zero)
+        {
+            ShowWindow(hWnd, SW_RESTORE);
+            BringWindowToTop(hWnd);
+            SetForegroundWindow(hWnd);
+        }
+
+        Activate();
+        Focus();
+
+        Topmost = true;
+        if (!App.Settings.AlwaysOnTop)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!App.Settings.AlwaysOnTop)
+                {
+                    Topmost = false;
+                }
+            }), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+    }
+
     public void ApplyRuntimeOverrides(LaunchOverrides? overrides)
     {
         if (overrides == null || !overrides.HasOverrides) return;
         if (overrides.StopRequested) { _timerService.Stop(); return; }
-        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
-        Activate();
+        BringToFrontAndRestore();
         if (overrides.Action.HasValue) App.Settings.SelectedPowerAction = overrides.Action.Value;
         if (overrides.SoundEnabled.HasValue) { App.Settings.SoundEnabled = overrides.SoundEnabled.Value; UpdateSoundVisual(); }
         if (overrides.SoundVolume.HasValue) App.Settings.SoundVolume = overrides.SoundVolume.Value;

@@ -78,6 +78,12 @@ public static class CommandLineService
                         overrides.SoundVolume = Math.Clamp(vol, 10, 100);
                     break;
 
+                case "--show":
+                case "--open":
+                case "--foreground":
+                    overrides.ShowRequested = true;
+                    break;
+
                 case "--start":
                 case "--run":
                     overrides.AutoStart = true;

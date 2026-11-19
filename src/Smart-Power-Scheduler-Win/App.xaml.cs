@@ -32,10 +32,7 @@ public partial class App : Application
         _mutex = new Mutex(true, UniqueAppGuid, out bool isNewInstance);
         if (!isNewInstance)
         {
-            if (e.Args.Length > 0)
-            {
-                IpcService.TrySendToExistingInstance(e.Args);
-            }
+            IpcService.TrySendToExistingInstance(e.Args.Length > 0 ? e.Args : ["--show"]);
 
             try
             {

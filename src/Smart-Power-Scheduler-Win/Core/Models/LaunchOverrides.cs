@@ -12,7 +12,8 @@ public sealed class LaunchOverrides
     public int? SoundVolume { get; set; }
     public bool AutoStart { get; set; } = true;
     public bool StopRequested { get; set; }
+    public bool ShowRequested { get; set; }
 
-    public bool HasOverrides => Action != null || Duration != null || SoundEnabled != null || SoundVolume != null || StopRequested;
+    public bool HasOverrides => Action != null || Duration != null || SoundEnabled != null || SoundVolume != null || StopRequested || ShowRequested;
 }
 

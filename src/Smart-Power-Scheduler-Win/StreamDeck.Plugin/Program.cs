@@ -284,7 +284,8 @@ public static class Program
             {
                 FileName = exePath,
                 Arguments = arguments,
-                UseShellExecute = true
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Normal
             };
             var proc = Process.Start(psi);
             Log($"Process launched successfully! PID={proc?.Id}");
