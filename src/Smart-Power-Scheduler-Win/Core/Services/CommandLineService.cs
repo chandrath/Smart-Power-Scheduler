@@ -82,6 +82,7 @@ public static class CommandLineService
                 case "--open":
                 case "--foreground":
                     overrides.ShowRequested = true;
+                    overrides.AutoStart = false;
                     break;
 
                 case "--start":

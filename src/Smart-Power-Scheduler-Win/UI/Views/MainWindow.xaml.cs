@@ -563,27 +563,82 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     private static extern bool BringWindowToTop(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr ProcessId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+
     private const int SW_RESTORE = 9;
+    private const byte VK_MENU = 0x12;
+    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
 
     public void BringToFrontAndRestore()
     {
-        if (WindowState == WindowState.Minimized)
+        var helper = new System.Windows.Interop.WindowInteropHelper(this);
+        helper.EnsureHandle();
+        IntPtr hWnd = helper.Handle;
+
+        if (hWnd != IntPtr.Zero)
+        {
+            // 1. Force native Win32 window restoration from iconic/minimized state
+            if (IsIconic(hWnd) || WindowState == WindowState.Minimized)
+            {
+                ShowWindow(hWnd, SW_RESTORE);
+                WindowState = WindowState.Normal;
+            }
+
+            // 2. Unlock Windows Foreground Lockout
+            IntPtr foregroundWnd = GetForegroundWindow();
+            uint targetThreadId = GetCurrentThreadId();
+            uint foreThreadId = foregroundWnd != IntPtr.Zero ? GetWindowThreadProcessId(foregroundWnd, IntPtr.Zero) : 0;
+            bool attached = false;
+
+            try
+            {
+                if (foreThreadId != 0 && foreThreadId != targetThreadId)
+                {
+                    attached = AttachThreadInput(foreThreadId, targetThreadId, true);
+                }
+
+                // Simulate Alt key press/release to grant foreground privileges under Windows 10/11
+                keybd_event(VK_MENU, 0x38, KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+                keybd_event(VK_MENU, 0x38, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, UIntPtr.Zero);
+
+                BringWindowToTop(hWnd);
+                SetForegroundWindow(hWnd);
+            }
+            finally
+            {
+                if (attached)
+                {
+                    AttachThreadInput(foreThreadId, targetThreadId, false);
+                }
+            }
+        }
+        else if (WindowState == WindowState.Minimized)
         {
             WindowState = WindowState.Normal;
         }
 
-        var helper = new System.Windows.Interop.WindowInteropHelper(this);
-        IntPtr hWnd = helper.Handle;
-        if (hWnd != IntPtr.Zero)
-        {
-            ShowWindow(hWnd, SW_RESTORE);
-            BringWindowToTop(hWnd);
-            SetForegroundWindow(hWnd);
-        }
-
+        // 3. WPF Level Activation
         Activate();
         Focus();
 
+        // 4. Temporarily elevate Z-order to top if not already pinned AlwaysOnTop
         Topmost = true;
         if (!App.Settings.AlwaysOnTop)
         {
