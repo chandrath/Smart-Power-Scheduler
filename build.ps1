@@ -3,16 +3,22 @@
     Automated Production Build & Packaging Script for Smart Power Scheduler.
     Reads Single Source of Truth (SSOT) from DevConfig.json.
     Produces standard release installer artifacts:
-      1. {AppName}-v{Version}-win-x64-Setup.exe (Self-contained, recommended)
-      2. {AppName}-v{Version}-win-x64-Setup-ReqDotNet10.exe (Framework-dependent)
+      1. {AppName}-v{Version}-{Arch}-Setup.exe (Self-contained, recommended)
+      2. {AppName}-v{Version}-{Arch}-Setup-ReqDotNet10.exe (Framework-dependent)
 
 .PARAMETER VersionTag
     Optional git tag override (e.g. "v0.9.0.1" or "0.9.0.1").
     If omitted, the version defined in DevConfig.json is used.
+
+.PARAMETER Architecture
+    Target architecture ("all", "win-x64", "win-arm64").
+    Defaults to "all" (reads from DevConfig.json SSOT).
 #>
 [CmdletBinding()]
 param(
-    [string]$VersionTag = ""
+    [string]$VersionTag = "",
+    [ValidateSet("all", "win-x64", "win-arm64")]
+    [string]$Architecture = "all"
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,111 +54,25 @@ if (![string]::IsNullOrWhiteSpace($VersionTag)) {
     }
 }
 
+# Determine target architectures from SSOT
+$targetArchitectures = if ($Architecture -eq "all") {
+    if ($cfg.App.SupportedArchitectures) { @($cfg.App.SupportedArchitectures) } else { @("win-x64", "win-arm64") }
+} else {
+    @($Architecture)
+}
+
 # 2. Synchronize Icon Pipeline from SSOT master-icon.png
 $iconPipeline = Join-Path $srcDir "Assets\Update-Icons.ps1"
 if (Test-Path $iconPipeline) {
     & $iconPipeline
 }
 
-Write-Host "App Name:        $appName ($appDisplayName)" -ForegroundColor Green
-Write-Host "App Version:     $appVersion" -ForegroundColor Green
-Write-Host "Vendor:          $appVendor" -ForegroundColor Green
-
-# 2. Clean and prepare output directories
-if (Test-Path $artifactsDir) {
-    Get-ChildItem -Path $artifactsDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-} else {
-    New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
-}
-if (Test-Path $tempPublishDir) {
-    Get-ChildItem -Path $tempPublishDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-} else {
-    New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
-}
-
-$selfContainedDir = Join-Path $tempPublishDir "SelfContained"
-$frameworkDepDir = Join-Path $tempPublishDir "FrameworkDependent"
-
-$streamDeckProj = Join-Path $srcDir "StreamDeck.Plugin\SmartPowerScheduler.StreamDeck.csproj"
-$streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartpowerscheduler.sdPlugin"
-
-$selfContainedSDDir = Join-Path $tempPublishDir "StreamDeckSelfContained"
-$frameworkDepSDDir = Join-Path $tempPublishDir "StreamDeckFrameworkDep"
-
-# Synchronize Stream Deck manifest.json with SSOT
-$manifestFile = Join-Path $streamDeckPluginSrc "manifest.json"
-if (Test-Path $manifestFile) {
-    $manifestObj = Get-Content -Raw $manifestFile | ConvertFrom-Json
-    $manifestObj.Version = $appVersion
-    $manifestObj.URL = $appUrl
-    $manifestObj.Name = $appDisplayName
-    $manifestObj.Description = $cfg.App.Description
-    $manifestObj | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestFile -Encoding UTF8
-    Write-Host "-> Synchronized Stream Deck manifest.json with SSOT (v$appVersion)" -ForegroundColor Green
-}
-
-# Copy base plugin templates to staging directories
-Copy-Item -Path $streamDeckPluginSrc -Destination $selfContainedSDDir -Recurse -Force
-Copy-Item -Path $streamDeckPluginSrc -Destination $frameworkDepSDDir -Recurse -Force
-
-# 3. Publish Self-Contained Win-x64
-Write-Host "`n[1/3] Publishing Self-Contained Win-x64 build..." -ForegroundColor Magenta
-dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
-    -c Release `
-    -r win-x64 `
-    --self-contained true `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -p:Version=$appVersion `
-    -o $selfContainedDir
-
-Write-Host "-> Publishing Stream Deck Plugin (Self-Contained)..."
-dotnet publish $streamDeckProj `
-    -c Release `
-    -r win-x64 `
-    --self-contained true `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -p:Version=$appVersion `
-    -o $selfContainedSDDir
-
-# 4. Publish Framework-Dependent Win-x64 (Requires .NET 10)
-Write-Host "`n[2/3] Publishing Framework-Dependent Win-x64 build..." -ForegroundColor Magenta
-dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
-    -c Release `
-    -r win-x64 `
-    --no-self-contained `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=false `
-    -p:Version=$appVersion `
-    -o $frameworkDepDir
-
-Write-Host "-> Publishing Stream Deck Plugin (Framework-Dependent)..."
-dotnet publish $streamDeckProj `
-    -c Release `
-    -r win-x64 `
-    --no-self-contained `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=false `
-    -p:Version=$appVersion `
-    -o $frameworkDepSDDir
-
-# 5. Build Inno Setup Installers
-Write-Host "`n[3/3] Building Inno Setup Installers..." -ForegroundColor Magenta
-
+# Locate Inno Setup Compiler upfront
 $isccPath = ""
-
-# 1. Check PATH
 $cmd = Get-Command iscc.exe -ErrorAction SilentlyContinue
 if ($cmd) {
     $isccPath = $cmd.Source
 }
-
-# 2. Check Windows Registry (App Paths & Uninstall keys for 32-bit and 64-bit)
 if (-not $isccPath) {
     $regKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ISCC.exe",
@@ -177,8 +97,6 @@ if (-not $isccPath) {
         }
     }
 }
-
-# 3. Fallback to standard environment directories
 if (-not $isccPath) {
     $envCandidates = @(
         (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
@@ -192,52 +110,160 @@ if (-not $isccPath) {
         }
     }
 }
-
 if (-not $isccPath) {
     throw "Inno Setup Compiler (ISCC.exe) was not found on this system. Please install Inno Setup 6 or add ISCC.exe to PATH."
 }
 
 $issPath = Join-Path $srcDir "Packaging\installer.iss"
-Write-Host "Found Inno Setup Compiler: $isccPath" -ForegroundColor Green
+Write-Host "App Name:        $appName ($appDisplayName)" -ForegroundColor Green
+Write-Host "App Version:     $appVersion" -ForegroundColor Green
+Write-Host "Vendor:          $appVendor" -ForegroundColor Green
+Write-Host "Architectures:   $($targetArchitectures -join ', ')" -ForegroundColor Green
+Write-Host "Inno Compiler:   $isccPath" -ForegroundColor Green
 
-# Installer 1: Self-contained installer
-$setupBaseName = "$appName-v$appVersion-win-x64-Setup"
-Write-Host "Compiling: $setupBaseName.exe"
-& $isccPath `
-    "/DMyAppName=$appDisplayName" `
-    "/DMyAppExeName=$appName.exe" `
-    "/DMyAppVersion=$appVersion" `
-    "/DMyPublisher=$appVendor" `
-    "/DMyAppURL=$appUrl" `
-    "/DMyAppId=$appId" `
-    "/DSourceDir=$selfContainedDir" `
-    "/DStreamDeckPluginDir=$selfContainedSDDir" `
-    "/DOutputDir=$artifactsDir" `
-    "/DOutputBaseFilename=$setupBaseName" `
-    $issPath | Out-Null
+# 3. Clean and prepare output directories
+if (Test-Path $artifactsDir) {
+    Get-ChildItem -Path $artifactsDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} else {
+    New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
+}
+if (Test-Path $tempPublishDir) {
+    Get-ChildItem -Path $tempPublishDir -Recurse | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+} else {
+    New-Item -ItemType Directory -Path $tempPublishDir -Force | Out-Null
+}
 
-# Installer 2: Framework-dependent installer
-$setupReqDotNetBaseName = "$appName-v$appVersion-win-x64-Setup-ReqDotNet10"
-Write-Host "Compiling: $setupReqDotNetBaseName.exe"
-& $isccPath `
-    "/DMyAppName=$appDisplayName" `
-    "/DMyAppExeName=$appName.exe" `
-    "/DMyAppVersion=$appVersion" `
-    "/DMyPublisher=$appVendor" `
-    "/DMyAppURL=$appUrl" `
-    "/DMyAppId=$appId" `
-    "/DSourceDir=$frameworkDepDir" `
-    "/DStreamDeckPluginDir=$frameworkDepSDDir" `
-    "/DOutputDir=$artifactsDir" `
-    "/DOutputBaseFilename=$setupReqDotNetBaseName" `
-    $issPath | Out-Null
+$streamDeckProj = Join-Path $srcDir "StreamDeck.Plugin\SmartPowerScheduler.StreamDeck.csproj"
+$streamDeckPluginSrc = Join-Path $srcDir "StreamDeck.Plugin\com.appsphinx.smartpowerscheduler.sdPlugin"
 
-# 6. Cleanup temp build directory
+# Synchronize Stream Deck manifest.json with SSOT
+$manifestFile = Join-Path $streamDeckPluginSrc "manifest.json"
+if (Test-Path $manifestFile) {
+    $manifestObj = Get-Content -Raw $manifestFile | ConvertFrom-Json
+    $manifestObj.Version = $appVersion
+    $manifestObj.URL = $appUrl
+    $manifestObj.Name = $appDisplayName
+    $manifestObj.Description = $cfg.App.Description
+    $manifestObj | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestFile -Encoding UTF8
+    Write-Host "-> Synchronized Stream Deck manifest.json with SSOT (v$appVersion)" -ForegroundColor Green
+}
+
+# 4. Process each architecture target
+$step = 1
+$totalSteps = $targetArchitectures.Count
+foreach ($targetArch in $targetArchitectures) {
+    Write-Host "`n==========================================================" -ForegroundColor Yellow
+    Write-Host "  Target [$step/$totalSteps]: $targetArch" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+
+    $innoArch = if ($targetArch -eq "win-arm64") { "arm64" } else { "x64" }
+    $archStagingDir = Join-Path $tempPublishDir $targetArch
+    $selfContainedDir = Join-Path $archStagingDir "SelfContained"
+    $frameworkDepDir = Join-Path $archStagingDir "FrameworkDependent"
+    $selfContainedSDDir = Join-Path $archStagingDir "StreamDeckSelfContained"
+    $frameworkDepSDDir = Join-Path $archStagingDir "StreamDeckFrameworkDep"
+
+    New-Item -ItemType Directory -Path $selfContainedDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $frameworkDepDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $selfContainedSDDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $frameworkDepSDDir -Force | Out-Null
+
+    # Copy base plugin templates to staging directories
+    Copy-Item -Path "$streamDeckPluginSrc\*" -Destination $selfContainedSDDir -Recurse -Force
+    Copy-Item -Path "$streamDeckPluginSrc\*" -Destination $frameworkDepSDDir -Recurse -Force
+
+    # 4a. Publish Self-Contained build
+    Write-Host "-> Publishing Self-Contained ($targetArch)..." -ForegroundColor Magenta
+    dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
+        -c Release `
+        -r $targetArch `
+        --self-contained true `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:Version=$appVersion `
+        -o $selfContainedDir
+
+    Write-Host "-> Publishing Stream Deck Plugin (Self-Contained - $targetArch)..."
+    dotnet publish $streamDeckProj `
+        -c Release `
+        -r $targetArch `
+        --self-contained true `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:Version=$appVersion `
+        -o $selfContainedSDDir
+
+    # 4b. Publish Framework-Dependent build (Requires .NET 10)
+    Write-Host "-> Publishing Framework-Dependent ($targetArch)..." -ForegroundColor Magenta
+    dotnet publish "$srcDir\SmartPowerScheduler.csproj" `
+        -c Release `
+        -r $targetArch `
+        --no-self-contained `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:EnableCompressionInSingleFile=false `
+        -p:Version=$appVersion `
+        -o $frameworkDepDir
+
+    Write-Host "-> Publishing Stream Deck Plugin (Framework-Dependent - $targetArch)..."
+    dotnet publish $streamDeckProj `
+        -c Release `
+        -r $targetArch `
+        --no-self-contained `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:EnableCompressionInSingleFile=false `
+        -p:Version=$appVersion `
+        -o $frameworkDepSDDir
+
+    # 4c. Compile Inno Setup Installers
+    Write-Host "-> Compiling Inno Setup Installers ($targetArch)..." -ForegroundColor Magenta
+
+    # Installer 1: Self-contained installer
+    $setupBaseName = "$appName-v$appVersion-$targetArch-Setup"
+    Write-Host "   Compiling: $setupBaseName.exe"
+    & $isccPath `
+        "/DMyAppName=$appDisplayName" `
+        "/DMyAppExeName=$appName.exe" `
+        "/DMyAppVersion=$appVersion" `
+        "/DMyPublisher=$appVendor" `
+        "/DMyAppURL=$appUrl" `
+        "/DMyAppId=$appId" `
+        "/DAppArch=$innoArch" `
+        "/DSourceDir=$selfContainedDir" `
+        "/DStreamDeckPluginDir=$selfContainedSDDir" `
+        "/DOutputDir=$artifactsDir" `
+        "/DOutputBaseFilename=$setupBaseName" `
+        $issPath | Out-Null
+
+    # Installer 2: Framework-dependent installer
+    $setupReqDotNetBaseName = "$appName-v$appVersion-$targetArch-Setup-ReqDotNet10"
+    Write-Host "   Compiling: $setupReqDotNetBaseName.exe"
+    & $isccPath `
+        "/DMyAppName=$appDisplayName" `
+        "/DMyAppExeName=$appName.exe" `
+        "/DMyAppVersion=$appVersion" `
+        "/DMyPublisher=$appVendor" `
+        "/DMyAppURL=$appUrl" `
+        "/DMyAppId=$appId" `
+        "/DAppArch=$innoArch" `
+        "/DSourceDir=$frameworkDepDir" `
+        "/DStreamDeckPluginDir=$frameworkDepSDDir" `
+        "/DOutputDir=$artifactsDir" `
+        "/DOutputBaseFilename=$setupReqDotNetBaseName" `
+        $issPath | Out-Null
+
+    $step++
+}
+
+# 5. Cleanup temp build directory
 if (Test-Path $tempPublishDir) {
     Remove-Item -Recurse -Force $tempPublishDir -ErrorAction SilentlyContinue
 }
 
-# 7. Display Summary
+# 6. Display Summary
 Write-Host "`n==========================================================" -ForegroundColor Cyan
 Write-Host "  Artifacts Generated Successfully in: artifacts\" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Cyan

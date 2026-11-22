@@ -32,6 +32,9 @@
 #ifndef OutputBaseFilename
   #define OutputBaseFilename "SmartPowerScheduler-Setup"
 #endif
+#ifndef AppArch
+  #define AppArch "x64"
+#endif
 
 [Setup]
 AppId={{{#MyAppId}}}
@@ -52,8 +55,8 @@ UninstallDisplayName={#MyAppName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-ArchitecturesInstallIn64BitMode=x64
-ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode={#AppArch}
+ArchitecturesAllowed={#AppArch}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 CloseApplications=yes

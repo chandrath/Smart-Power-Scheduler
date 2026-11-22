@@ -13,6 +13,10 @@ on:
         description: 'Version tag override (e.g. v0.9.0.1 or 0.9.0.1)'
         required: false
         default: ''
+      architecture:
+        description: 'Target architecture (all, win-x64, win-arm64)'
+        required: false
+        default: 'all'
 
 jobs:
   build-and-release:
@@ -42,7 +46,11 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($tag)) {
             $tag = "${{ github.ref_name }}"
           }
-          .\build.ps1 -VersionTag $tag
+          $arch = "${{ github.event.inputs.architecture }}"
+          if ([string]::IsNullOrWhiteSpace($arch)) {
+            $arch = "all"
+          }
+          .\build.ps1 -VersionTag $tag -Architecture $arch
 
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2

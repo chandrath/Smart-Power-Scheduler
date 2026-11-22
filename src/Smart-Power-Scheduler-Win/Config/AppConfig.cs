@@ -69,6 +69,8 @@ public sealed class AppMetadata
     public string Copyright { get; set; } = "Copyright © 2026 Appsphinx";
     public string AppId { get; set; } = "9E2F9F24-B1F6-4A0B-88EE-C2A8389DB67B";
     public string RepositoryUrl { get; set; } = "https://github.com/chandrath/Smart-Power-Scheduler";
+    [JsonPropertyName("SupportedArchitectures")]
+    public string[] SupportedArchitectures { get; set; } = ["win-x64", "win-arm64"];
 }
 
 public sealed class AppDefaults
