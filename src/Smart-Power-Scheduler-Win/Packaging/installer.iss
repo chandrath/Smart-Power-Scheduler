@@ -194,10 +194,15 @@ begin
   Result := True;
   IsChecked := False;
 
+#if VER >= 0x06060000
+  Form := CreateCustomForm(380, 140, False, False);
+  try
+#else
   Form := CreateCustomForm();
   try
     Form.ClientWidth := ScaleX(380);
     Form.ClientHeight := ScaleY(140);
+#endif
     Form.Caption := DialogTitle;
     Form.Position := poScreenCenter;
 
