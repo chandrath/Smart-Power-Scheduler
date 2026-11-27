@@ -34,6 +34,7 @@ function initFormValues() {
     var customRow = document.getElementById("customDurationRow");
     var customInput = document.getElementById("customDurationInput");
     var soundCheckbox = document.getElementById("soundCheckbox");
+    var longPressCheckbox = document.getElementById("longPressCheckbox");
 
     if (settings.action) {
         actionSelect.value = settings.action;
@@ -44,7 +45,7 @@ function initFormValues() {
         rawDur = rawDur + "m";
     }
 
-    var presets = ["10s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "45m", "1h", "2h", "3h", "4h"];
+    var presets = ["5s", "10s", "30s", "1m", "2m", "5m", "10m", "15m", "30m", "45m", "1h", "2h", "3h", "4h"];
 
     if (presets.indexOf(rawDur) !== -1) {
         presetSelect.value = rawDur;
@@ -56,6 +57,7 @@ function initFormValues() {
     }
 
     soundCheckbox.checked = settings.sound !== undefined ? (settings.sound === true) : true;
+    longPressCheckbox.checked = settings.longPress !== undefined ? (settings.longPress === true) : true;
 }
 
 function sanitizeDuration(val) {
@@ -91,6 +93,7 @@ function saveSettings() {
     var presetSelect = document.getElementById("presetSelect");
     var customInput = document.getElementById("customDurationInput");
     var soundCheckbox = document.getElementById("soundCheckbox");
+    var longPressCheckbox = document.getElementById("longPressCheckbox");
 
     var duration = "30s";
     if (presetSelect.value === "custom") {
@@ -103,7 +106,8 @@ function saveSettings() {
     var newSettings = {
         action: actionSelect.value,
         duration: duration,
-        sound: soundCheckbox.checked
+        sound: soundCheckbox.checked,
+        longPress: longPressCheckbox.checked
     };
 
     settings = newSettings;
@@ -123,6 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var customRow = document.getElementById("customDurationRow");
     var customInput = document.getElementById("customDurationInput");
     var soundCheckbox = document.getElementById("soundCheckbox");
+    var longPressCheckbox = document.getElementById("longPressCheckbox");
 
     presetSelect.addEventListener("change", function () {
         if (presetSelect.value === "custom") {
@@ -136,4 +141,5 @@ document.addEventListener("DOMContentLoaded", function () {
     actionSelect.addEventListener("change", saveSettings);
     customInput.addEventListener("input", saveSettings);
     soundCheckbox.addEventListener("change", saveSettings);
+    longPressCheckbox.addEventListener("change", saveSettings);
 });

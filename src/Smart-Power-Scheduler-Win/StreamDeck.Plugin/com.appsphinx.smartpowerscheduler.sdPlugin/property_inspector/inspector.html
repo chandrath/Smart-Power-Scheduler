@@ -30,6 +30,7 @@
                 <div class="sdpi-item-label">Timer Duration</div>
                 <div class="sdpi-item-value">
                     <select id="presetSelect">
+                        <option value="5s">5 Seconds</option>
                         <option value="10s" selected>10 Seconds (Default)</option>
                         <option value="30s">30 Seconds</option>
                         <option value="1m">1 Minute</option>
@@ -65,6 +66,17 @@
                     <span>Play sound on completion</span>
                 </label>
                 <div class="hint-text">Uses the active sound scheme from desktop settings</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Power Hub</div>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="longPressCheckbox" checked />
+                    <span>Open Power Hub on long-press</span>
+                </label>
+                <div class="hint-text">Hold button down (~0.35s) to open the Power Hub layout</div>
             </div>
         </div>
     </div>

@@ -7,7 +7,7 @@
     "Name": "SmartPowerScheduler",
     "DisplayName": "Smart Power Scheduler",
     "Description": "A clean, modern Windows smart power timer and scheduler with Fluent translucent design.",
-    "Version": "0.9.0.5",
+    "Version": "0.9.0.4",
     "Vendor": "Appsphinx",
     "Developer": "Shree",
     "Copyright": "Copyright © 2026 Appsphinx",
@@ -65,6 +65,10 @@
     "ActionTimerUUID": "com.appsphinx.smartpowerscheduler.action.timer",
     "PluginName": "Smart Power Scheduler",
     "DefaultAction": "Sleep",
-    "DefaultDuration": "30s"
+    "DefaultDuration": "30s",
+    "PowerHubProfileName": "Smart Power Scheduler",
+    "LongPressThresholdMs": 350,
+    "PowerHubDefaultDuration": "10s",
+    "EnableLongPressDefault": true
   }
 }

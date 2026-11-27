@@ -163,26 +163,157 @@ begin
   end;
 end;
 
+function GetInstalledVersion(var VersionStr: String): Boolean;
+var
+  UninstallSubKey: String;
+begin
+  UninstallSubKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppId}_is1';
+  Result := RegQueryStringValue(HKCU, UninstallSubKey, 'DisplayVersion', VersionStr) or
+            RegQueryStringValue(HKLM, UninstallSubKey, 'DisplayVersion', VersionStr);
+end;
+
+function IsExistingInstallOrConfig(): Boolean;
+var
+  AppDataDir: String;
+  DummyVer: String;
+begin
+  AppDataDir := ExpandConstant('{userappdata}\{#MyPublisher}\SmartPowerScheduler');
+  Result := DirExists(AppDataDir) or GetInstalledVersion(DummyVer);
+end;
+
+var
+  RemoveUserConfig: Boolean;
+
+function PromptOptInDialog(const DialogTitle, PromptText, CheckCaption: String; var IsChecked: Boolean): Boolean;
+var
+  Form: TSetupForm;
+  InfoLabel: TNewStaticText;
+  OptCheckBox: TNewCheckBox;
+  OkButton, CancelButton: TNewButton;
+begin
+  Result := True;
+  IsChecked := False;
+
+  Form := CreateCustomForm();
+  try
+    Form.ClientWidth := ScaleX(380);
+    Form.ClientHeight := ScaleY(140);
+    Form.Caption := DialogTitle;
+    Form.Position := poScreenCenter;
+
+    InfoLabel := TNewStaticText.Create(Form);
+    InfoLabel.Parent := Form;
+    InfoLabel.Left := ScaleX(16);
+    InfoLabel.Top := ScaleY(16);
+    InfoLabel.Width := ScaleX(348);
+    InfoLabel.AutoSize := False;
+    InfoLabel.WordWrap := True;
+    InfoLabel.Height := ScaleY(36);
+    InfoLabel.Caption := PromptText;
+
+    OptCheckBox := TNewCheckBox.Create(Form);
+    OptCheckBox.Parent := Form;
+    OptCheckBox.Left := ScaleX(16);
+    OptCheckBox.Top := ScaleY(60);
+    OptCheckBox.Width := ScaleX(348);
+    OptCheckBox.Caption := CheckCaption;
+    OptCheckBox.Checked := False;
+
+    OkButton := TNewButton.Create(Form);
+    OkButton.Parent := Form;
+    OkButton.Left := ScaleX(204);
+    OkButton.Top := ScaleY(100);
+    OkButton.Width := ScaleX(75);
+    OkButton.Height := ScaleY(24);
+    OkButton.Caption := 'OK';
+    OkButton.ModalResult := mrOk;
+    OkButton.Default := True;
+
+    CancelButton := TNewButton.Create(Form);
+    CancelButton.Parent := Form;
+    CancelButton.Left := ScaleX(289);
+    CancelButton.Top := ScaleY(100);
+    CancelButton.Width := ScaleX(75);
+    CancelButton.Height := ScaleY(24);
+    CancelButton.Caption := 'Cancel';
+    CancelButton.ModalResult := mrCancel;
+    CancelButton.Cancel := True;
+
+    if Form.ShowModal() = mrOk then
+      IsChecked := OptCheckBox.Checked
+    else
+      Result := False;
+  finally
+    Form.Free();
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  AppDataDir: String;
+  InstalledVerStr: String;
+  InstalledVer, NewVer: Int64;
+  IsUpgrade, ShouldReset: Boolean;
+  ResultCode: Integer;
 begin
   Result := '';
   TaskKillStreamDeckPlugin();
 
   if WizardIsComponentSelected('streamdeck') and IsProcessRunning('StreamDeck.exe') then
   begin
-    if MsgBox('Elgato Stream Deck is currently running. It must be closed to install / update the plugin files. Would you like Setup to close Stream Deck automatically?', mbConfirmation, MB_YESNO) = IDYES then
+    if WizardSilent() or (MsgBox('Elgato Stream Deck is currently running. It must be closed to install / update the plugin files. Would you like Setup to close Stream Deck automatically?', mbConfirmation, MB_YESNO) = IDYES) then
     begin
       CloseStreamDeckApp();
     end
     else
     begin
       Result := 'Installation cannot continue while Elgato Stream Deck is running. Please close Stream Deck and run Setup again.';
+      Exit;
+    end;
+  end;
+
+  IsUpgrade := False;
+  if GetInstalledVersion(InstalledVerStr) and StrToVersion(InstalledVerStr, InstalledVer) and StrToVersion('{#MyAppVersion}', NewVer) then
+  begin
+    if ComparePackedVersion(InstalledVer, NewVer) < 0 then
+      IsUpgrade := True;
+  end;
+
+  if (not WizardSilent()) and (not IsUpgrade) and IsExistingInstallOrConfig() then
+  begin
+    ShouldReset := False;
+    if not PromptOptInDialog('Existing Configuration', 'Existing {#MyAppName} configuration was detected. Choose whether to reset it:', 'Reset saved settings and history to defaults', ShouldReset) then
+    begin
+      Result := 'Installation cancelled by user.';
+      Exit;
+    end;
+    if ShouldReset then
+    begin
+      Exec('taskkill.exe', '/F /IM SmartPowerScheduler.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Sleep(300);
+      AppDataDir := ExpandConstant('{userappdata}\{#MyPublisher}\SmartPowerScheduler');
+      if DirExists(AppDataDir) then
+        DelTree(AppDataDir, True, True, True);
     end;
   end;
 end;
 
 function InitializeSetup(): Boolean;
+var
+  InstalledVerStr: String;
+  InstalledVer, NewVer: Int64;
 begin
+  if GetInstalledVersion(InstalledVerStr) and StrToVersion(InstalledVerStr, InstalledVer) and StrToVersion('{#MyAppVersion}', NewVer) then
+  begin
+    if ComparePackedVersion(InstalledVer, NewVer) > 0 then
+    begin
+      if not WizardSilent() then
+        MsgBox('A newer version (' + InstalledVerStr + ') of {#MyAppName} is already installed.' #13#10 'Installing an older version ({#MyAppVersion}) is not allowed.', mbError, MB_OK);
+      Result := False;
+      Exit;
+    end;
+  end;
+
   TaskKillStreamDeckPlugin();
   Result := True;
 end;
@@ -190,6 +321,7 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   PluginDir: String;
+  AppDataDir: String;
   ResultCode: Integer;
 begin
   if CurUninstallStep = usUninstall then
@@ -203,14 +335,33 @@ begin
     PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartpowerscheduler.sdPlugin');
     if DirExists(PluginDir) then
       DelTree(PluginDir, True, True, True);
+
+    if RemoveUserConfig then
+    begin
+      AppDataDir := ExpandConstant('{userappdata}\{#MyPublisher}\SmartPowerScheduler');
+      if DirExists(AppDataDir) then
+        DelTree(AppDataDir, True, True, True);
+    end;
   end;
 end;
 
 function InitializeUninstall(): Boolean;
 var
   PluginDir: String;
+  AppDataDir: String;
   ResultCode: Integer;
 begin
+  RemoveUserConfig := False;
+  AppDataDir := ExpandConstant('{userappdata}\{#MyPublisher}\SmartPowerScheduler');
+  if (not UninstallSilent()) and DirExists(AppDataDir) then
+  begin
+    if not PromptOptInDialog('Uninstall {#MyAppName}', 'Saved configuration and history were found for {#MyAppName}. Choose whether to remove them:', 'Remove saved configuration, settings, and history', RemoveUserConfig) then
+    begin
+      Result := False;
+      Exit;
+    end;
+  end;
+
   PluginDir := ExpandConstant('{userappdata}\Elgato\StreamDeck\Plugins\com.appsphinx.smartpowerscheduler.sdPlugin');
 
   // Kill plugin subprocess silently first

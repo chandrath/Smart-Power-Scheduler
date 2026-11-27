@@ -18,6 +18,14 @@
                }
            ],
     "CodePathWin":  "SmartPowerScheduler.StreamDeck.exe",
+    "Profiles":  [
+                     {
+                         "Name":  "Smart Power Scheduler",
+                         "DeviceType":  0,
+                         "DontAutoSwitchWhenInstalled":  true,
+                         "AutoInstall":  true
+                     }
+                 ],
     "Actions":  [
                     {
                         "Name":  "Smart Power Timer",
@@ -34,7 +42,7 @@
                                        {
                                            "Image":  "images/actionIcon",
                                            "TitleAlignment":  "middle",
-                                           "FontSize":  12,
+                                           "FontSize":  16,
                                            "FontStyle":  "Bold",
                                            "TitleColor":  "#FFFFFF"
                                        }

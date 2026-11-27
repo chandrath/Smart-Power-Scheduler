@@ -22,6 +22,7 @@ public static class Program
     private static DateTime _completionUntil = DateTime.MinValue;
     private static string _completedAction = "Sleep";
     private static readonly Dictionary<string, string> _imageBase64 = new(StringComparer.OrdinalIgnoreCase);
+    public static string? PluginUuid { get; private set; }
 
     public static async Task Main(string[] args)
     {
@@ -36,7 +37,7 @@ public static class Program
         {
             string flag = args[i].ToLowerInvariant();
             if (flag == "-port" && i + 1 < args.Length) int.TryParse(args[++i], out port);
-            else if (flag == "-pluginuuid" && i + 1 < args.Length) pluginUuid = args[++i];
+            else if (flag == "-pluginuuid" && i + 1 < args.Length) { pluginUuid = args[++i]; PluginUuid = pluginUuid; }
             else if (flag == "-registerevent" && i + 1 < args.Length) registerEvent = args[++i];
         }
 
@@ -149,6 +150,7 @@ public static class Program
                         break;
 
                     case "willDisappear":
+                        PowerHubHandler.Cleanup(context);
                         _keys.TryRemove(context, out _);
                         break;
 
@@ -161,7 +163,11 @@ public static class Program
                         break;
 
                     case "keyDown":
-                        await HandleKeyDownAsync(context, ct);
+                        HandleKeyDown(context, doc["device"]?.GetValue<string>(), doc["action"]?.GetValue<string>());
+                        break;
+
+                    case "keyUp":
+                        HandleKeyUp(context, doc["action"]?.GetValue<string>());
                         break;
                 }
             }
@@ -218,13 +224,37 @@ public static class Program
         if (settings["sound"] != null && bool.TryParse(settings["sound"]!.ToString(), out bool snd))
             cfg.SoundEnabled = snd;
 
+        if (settings["longPress"] != null && bool.TryParse(settings["longPress"]!.ToString(), out bool lp))
+            cfg.LongPressEnabled = lp;
+
         return cfg;
     }
 
-    private static async Task HandleKeyDownAsync(string context, CancellationToken ct)
+    private static void HandleKeyDown(string context, string? device, string? actionUuid)
     {
+        if (actionUuid == "com.appsphinx.smartpowerscheduler.action.back")
+        {
+            PowerHubHandler.OnBackAction(context, device, SendEvent, Log);
+            return;
+        }
+
         if (!_keys.TryGetValue(context, out var config)) config = new KeyConfig();
-        Log($"KeyDown context={context}, Action={config.Action}, Duration={config.Duration}, CurrentState={_lastState.State}");
+        Log($"KeyDown context={context}, Action={config.Action}, Duration={config.Duration}, LongPress={config.LongPressEnabled}, CurrentState={_lastState.State}");
+
+        PowerHubHandler.OnKeyDown(context, device, config, () => _ = Task.Run(() => ExecuteTimerAction(config)), SendEvent, Log);
+    }
+
+    private static void HandleKeyUp(string context, string? actionUuid)
+    {
+        if (actionUuid == "com.appsphinx.smartpowerscheduler.action.back") return;
+
+        if (!_keys.TryGetValue(context, out var config)) config = new KeyConfig();
+        PowerHubHandler.OnKeyUp(context, () => _ = Task.Run(() => ExecuteTimerAction(config)));
+    }
+
+    private static void ExecuteTimerAction(KeyConfig config)
+    {
+        Log($"Executing timer action: Action={config.Action}, Duration={config.Duration}, CurrentState={_lastState.State}");
 
         // Case A: Timer is already running -> pressing button STOPS the countdown
         if (_lastState.State == "Running")
@@ -462,19 +492,18 @@ public static class Program
             bool isMatchingAction = string.Equals(config.Action, state.Action, StringComparison.OrdinalIgnoreCase);
             if (isMatchingAction || _keys.Count == 1)
             {
-                string targetAct = FormatActionShort(state.Action);
-                title = $"{FormatDuration(state.RemainingSeconds)}\n{targetAct}";
+                title = FormatButtonTitle(FormatDuration(state.RemainingSeconds), state.Action);
             }
             else
             {
-                title = $"{config.Duration}\n{actShort}";
+                title = FormatButtonTitle(config.Duration, config.Action);
             }
         }
         else
         {
             bool isPower = config.Action.Contains("shut", StringComparison.OrdinalIgnoreCase) || config.Action.Contains("restart", StringComparison.OrdinalIgnoreCase);
             imgKey = isPower ? "idle_shutdown" : "idle_sleep";
-            title = state.State == "Paused" ? $"{actShort}\nPAUSED" : $"{config.Duration}\n{actShort}";
+            title = state.State == "Paused" ? $"{actShort}\nPAUSED" : FormatButtonTitle(config.Duration, config.Action);
         }
 
         if (config.LastAppliedImageKey != imgKey && _imageBase64.TryGetValue(imgKey, out var b64))
@@ -500,9 +529,12 @@ public static class Program
         return (sec >= 3600 && sec % 3600 == 0) ? $"{sec / 3600}h" : ((sec >= 60 && sec % 60 == 0) ? $"{sec / 60}m" : $"{sec}s");
     }
 
+    private static string FormatButtonTitle(string duration, string action) =>
+        $"{duration}\n{FormatActionShort(action)}";
+
     private static string FormatActionShort(string action) =>
         action.Trim().ToLowerInvariant().Replace("_", "").Replace("-", "").Replace(" ", "") switch
-        { "sleep" => "SLEEP", "hibernate" => "HIBER", "shutdown" => "SHUT", "restart" => "R-START", "forceshutdown" => "F-SHUT", "forcerestart" => "F-START", "lock" => "LOCK", _ => action.ToUpperInvariant() };
+        { "sleep" => "SLEEP", "hibernate" => "HIBER-\nNATE", "shutdown" or "forceshutdown" => "SHUT-\nDOWN", "restart" or "forcerestart" => "RE-\nSTART", "lock" => "LOCK", _ => action.ToUpperInvariant() };
 
     private static string FormatDuration(int totalSeconds) =>
         totalSeconds >= 3600 ? $"{totalSeconds / 3600}h {(totalSeconds % 3600) / 60}m" :
@@ -523,7 +555,8 @@ public static class Program
 public sealed class KeyConfig
 {
     public string Action { get; set; } = "Sleep"; public string Duration { get; set; } = "10s";
-    public bool SoundEnabled { get; set; } = true; public string? CustomTitle { get; set; }
+    public bool SoundEnabled { get; set; } = true; public bool LongPressEnabled { get; set; } = true;
+    public string? CustomTitle { get; set; }
     public string? LastAppliedImageKey { get; set; }
     public string? LastAppliedTitle { get; set; }
 }
